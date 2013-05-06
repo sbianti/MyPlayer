@@ -1,0 +1,16 @@
+	My Player
+	¯¯¯¯¯¯¯¯¯
+
+Faire un mplayer autrement : en premier lieu lié à GStreamer, mais doit être modulaire pour accepter autre chose.
+
+Faire des “binding” à la emacs : toute action est effectuée pas une fonction. Une table d'aiguillage fait la jonction avec les racourcis
+	→ un aiguillage par défaut hardcodé.
+	  un fichier de config dans ~/.config
+
+⋅ Ligne de commande:
+  -q --quiet ; -F --full-screen ; --display <val> ; 
+
+⋅ Un raccourci pour boucler dans l'interface d'affichage { «à la mplayer» ; tout en OSD ; interface de bureau (Gtk, Qt…) }
+   Navigateur de fichiers en OSD aussi.
+
+⋅ Utiliser un glib-N-ary-tree pour contruire le pipeline ¿?
