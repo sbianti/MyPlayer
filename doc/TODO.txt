@@ -3,7 +3,7 @@
 
 Faire un mplayer autrement : en premier lieu lié à GStreamer, mais doit être modulaire pour accepter autre chose.
 
-Faire des “binding” à la emacs : toute action est effectuée pas une fonction. Une table d'aiguillage fait la jonction avec les racourcis
+Faire des “binding” à la emacs : toute action est effectuée par une fonction. Une table d'aiguillage fait la jonction avec les raccourcis.
 	→ un aiguillage par défaut hardcodé.
 	  un fichier de config dans ~/.config
 
