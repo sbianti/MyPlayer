@@ -14,3 +14,5 @@ Faire des “binding” à la emacs : toute action est effectuée par une foncti
    Navigateur de fichiers en OSD aussi.
 
 ⋅ Utiliser un glib-N-ary-tree pour contruire le pipeline ¿?
+
+⋅ Concaténer, diviser, composer des fichers à la manière de mmg.
