@@ -8,7 +8,11 @@ Faire des “binding” à la emacs : toute action est effectuée par une foncti
 	  un fichier de config dans ~/.config
 
 ⋅ Ligne de commande:
-  -q --quiet ; -F --full-screen ; --display <val> ; 
+  -q --quiet ; -F --full-screen ; --display <val> ;
+  --no-inspect ⇒ n'affiche pas les infos (auteur, nom, type de flux …) ;
+  --discover=<type d'affichage d'info>
+  --silent ⇒ n'affiche rien, mais peut quand même être loggé
+  --disable-logging ⇒ désactive le log dans un fichier
 
 ⋅ Un raccourci pour boucler dans l'interface d'affichage { «à la mplayer» ; tout en OSD ; interface de bureau (Gtk, Qt…) }
    Navigateur de fichiers en OSD aussi.
@@ -16,3 +20,5 @@ Faire des “binding” à la emacs : toute action est effectuée par une foncti
 ⋅ Utiliser un glib-N-ary-tree pour contruire le pipeline ¿?
 
 ⋅ Concaténer, diviser, composer des fichers à la manière de mmg.
+
+⋅ Logging «transversal» → générique, au dessus de GStreamer (comme le reste d'ailleurs)
