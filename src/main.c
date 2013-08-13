@@ -23,6 +23,8 @@
 # include <config.h>
 #endif
 
+#include <stdlib.h>
+#include <string.h>
 #include <signal.h>
 
 static volatile sig_atomic_t terminated = 0;
@@ -45,6 +47,12 @@ static void sig_term(int sig)
 
 int main(int argc, char *argv[])
 {
-  
+  struct sigaction sa;
+
+  memset(&sa, 0, sizeof(sa));
+  sa.sa_handler = sig_term;
+  sigaction(SIGINT, &sa, NULL);
+  sigaction(SIGTERM, &sa, NULL);
+
   return status;
 }
