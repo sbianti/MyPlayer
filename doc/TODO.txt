@@ -22,3 +22,11 @@ Faire des “binding” à la emacs : toute action est effectuée par une foncti
 ⋅ Concaténer, diviser, composer des fichers à la manière de mmg.
 
 ⋅ Logging «transversal» → générique, au dessus de GStreamer (comme le reste d'ailleurs)
+
+⋅ Unit tests: testeur d'URL (avec les «"», sans, avec "~", chemin absolut)
+
+⋅ Média de test
+
+⋅ Man pages
+
+⋅ Le graph de buffering ou autre doit tenir compte de la largeur du terminal (sinon, une fin de ligne est ajoutée à la sortie standard rendant l'affichage merdique) → être au courant des changements de taille du terminal.
