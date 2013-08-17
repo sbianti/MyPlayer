@@ -41,4 +41,6 @@ gboolean myp_plst_pause(myp_playlist_t playlist);
 gboolean myp_plst_next(myp_playlist_t playlist);
 gboolean myp_plst_pred(myp_playlist_t playlist);
 
+gboolean myp_plst_is_empty(myp_playlist_t playlist);
+
 #endif /* PLAYLIST_H */

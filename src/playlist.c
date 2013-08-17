@@ -85,3 +85,8 @@ gboolean myp_plst_pred(myp_playlist_t playlist)
 
   return TRUE;
 }
+
+gboolean myp_plst_is_empty(myp_playlist_t playlist)
+{
+  return playlist->list == NULL;
+}
