@@ -140,9 +140,11 @@ static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
   case '\n':
   case '>':
     printl("→ next !");
+    myp_plst_next(ctx->playlist);
     break;
   case '<':
     printl("← pred !");
+    myp_plst_pred(ctx->playlist);
     break;
   case 'f':
     printl("Full screen !");
@@ -165,7 +167,6 @@ int main(int argc, char *argv[])
 {
   struct sigaction sa;
   GError *error = NULL;
-  myp_playlist_t playlist = NULL;
   GIOChannel *io_stdin;
   myp_context_t ctx;
   GOptionContext *context;
@@ -198,8 +199,8 @@ int main(int argc, char *argv[])
   sigaction(SIGINT, &sa, NULL);
   sigaction(SIGTERM, &sa, NULL);
 
-  playlist = myp_plst_parse_cmdline(argc, argv);
-  if (playlist == NULL)
+  ctx->playlist = myp_plst_parse_cmdline(argc, argv);
+  if (ctx->playlist == NULL)
     quit(ERROR);
 
   io_stdin = g_io_channel_unix_new(0);
@@ -208,7 +209,7 @@ int main(int argc, char *argv[])
 
   g_io_add_watch(io_stdin, G_IO_IN, (GIOFunc)handle_keyboard, ctx);
 
-  myp_plst_play(playlist);
+  myp_plst_play(ctx->playlist);
   ctx->loop = g_main_loop_new(NULL, FALSE);
   g_main_loop_run(ctx->loop);
 

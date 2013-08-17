@@ -24,11 +24,14 @@
 
 #include <glib.h>
 
+#include "playlist.h"
+
 enum __myp_status_t__ { SUCCESS, EXIT, ERROR };
 typedef enum __myp_status_t__ myp_status_t;
 
 struct __myp_context_t__ {
   GMainLoop *loop;
+  myp_playlist_t playlist;
 };
 typedef struct __myp_context_t__* myp_context_t;
 
