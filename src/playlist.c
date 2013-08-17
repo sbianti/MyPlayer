@@ -73,3 +73,15 @@ gboolean myp_plst_next(myp_playlist_t playlist)
 
   return TRUE;
 }
+
+gboolean myp_plst_pred(myp_playlist_t playlist)
+{
+  if (playlist->current == NULL) {
+    playlist->current = g_list_last(playlist->list);
+    return TRUE;
+  }
+
+  playlist->current = g_list_previous(playlist->list);
+
+  return TRUE;
+}
