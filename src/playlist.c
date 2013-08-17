@@ -22,7 +22,7 @@
 #include "playlist.h"
 #include "print.h"
 
-myp_playlist_t parse_cmdline(int argc, char **argv)
+myp_playlist_t myp_plst_parse_cmdline(int argc, char **argv)
 {
   myp_playlist_t playlist = g_try_new(struct __myp_playlist_t__, 1);
 
@@ -40,7 +40,7 @@ myp_playlist_t parse_cmdline(int argc, char **argv)
   return playlist;
 }
 
-gboolean play(myp_playlist_t playlist)
+gboolean myp_plst_play(myp_playlist_t playlist)
 {
   if (playlist->current == NULL)
     playlist->current = playlist->list;
@@ -48,17 +48,17 @@ gboolean play(myp_playlist_t playlist)
   return TRUE;
 }
 
-gboolean stop(myp_playlist_t playlist)
+gboolean myp_plst_stop(myp_playlist_t playlist)
 {
   return TRUE;
 }
 
-gboolean pause(myp_playlist_t playlist)
+gboolean myp_plst_pause(myp_playlist_t playlist)
 {
   return TRUE;
 }
 
-gboolean next(myp_playlist_t playlist)
+gboolean myp_plst_next(myp_playlist_t playlist)
 {
   if (playlist->current == NULL) {
     playlist->current = playlist->list;

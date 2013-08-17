@@ -27,6 +27,7 @@
 #include <string.h>
 #include <signal.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #ifdef HAVE_TERMIOS
 #ifdef HAVE_TERMIOS_H
@@ -197,7 +198,7 @@ int main(int argc, char *argv[])
   sigaction(SIGINT, &sa, NULL);
   sigaction(SIGTERM, &sa, NULL);
 
-  playlist = parse_cmdline(argc, argv);
+  playlist = myp_plst_parse_cmdline(argc, argv);
   if (playlist == NULL)
     quit(ERROR);
 
@@ -207,7 +208,7 @@ int main(int argc, char *argv[])
 
   g_io_add_watch(io_stdin, G_IO_IN, (GIOFunc)handle_keyboard, ctx);
 
-  play(playlist);
+  myp_plst_play(playlist);
   ctx->loop = g_main_loop_new(NULL, FALSE);
   g_main_loop_run(ctx->loop);
 

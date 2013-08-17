@@ -33,11 +33,11 @@ struct __myp_playlist_t__ { /* la rendre opaque */
 
 typedef struct __myp_playlist_t__* myp_playlist_t;
 
-myp_playlist_t parse_cmdline(int argc, char **argv);
+myp_playlist_t myp_plst_parse_cmdline(int argc, char **argv);
 
-gboolean play(myp_playlist_t playlist);
-gboolean stop(myp_playlist_t playlist);
-gboolean pause(myp_playlist_t playlist);
-gboolean next(myp_playlist_t playlist);
+gboolean myp_plst_play(myp_playlist_t playlist);
+gboolean myp_plst_stop(myp_playlist_t playlist);
+gboolean myp_plst_pause(myp_playlist_t playlist);
+gboolean myp_plst_next(myp_playlist_t playlist);
 
 #endif /* PLAYLIST_H */
