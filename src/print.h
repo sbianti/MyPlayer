@@ -24,5 +24,7 @@
 
 int print(const char *format, ...);
 int printl(const char *format, ...);
+int printerr(const char *format, ...);
+int printerrl(const char *format, ...);
 
 #endif /* PRINT_H */

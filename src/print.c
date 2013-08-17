@@ -49,3 +49,29 @@ int printl(const char *format, ...)
 
   return ret+1;
 }
+
+int printerr(const char *format, ...)
+{
+  va_list args;
+  int ret;
+
+  va_start(args, format);
+  ret = vfprintf(stderr, format, args);
+  va_end(args);
+
+  return ret;
+}
+
+int printerrl(const char *format, ...)
+{
+  va_list args;
+  int ret;
+
+  va_start(args, format);
+  ret = vfprintf(stderr, format, args);
+  va_end(args);
+
+  puts("");
+
+  return ret+1;
+}
