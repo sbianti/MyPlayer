@@ -36,6 +36,11 @@ int print(const char *format, ...)
   return ret;
 }
 
+int vprint(const char *format, va_list ap)
+{
+  return vprintf(format, ap);
+}
+
 int printl(const char *format, ...)
 {
   va_list args;
@@ -44,6 +49,15 @@ int printl(const char *format, ...)
   va_start(args, format);
   ret = vprintf(format, args);
   va_end(args);
+
+  puts("");
+
+  return ret+1;
+}
+
+int vprintl(const char *format, va_list ap)
+{
+  int ret = vprintf(format, ap);
 
   puts("");
 
@@ -62,6 +76,11 @@ int printerr(const char *format, ...)
   return ret;
 }
 
+int vprinterr(const char *format, va_list ap)
+{
+  return vfprintf(stderr, format, ap);
+}
+
 int printerrl(const char *format, ...)
 {
   va_list args;
@@ -71,6 +90,15 @@ int printerrl(const char *format, ...)
   ret = vfprintf(stderr, format, args);
   va_end(args);
 
+  puts("");
+
+  return ret+1;
+}
+
+int vprinterrl(const char *format, va_list ap)
+{
+  int ret = vfprintf(stderr, format, ap);
+  
   puts("");
 
   return ret+1;

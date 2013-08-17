@@ -23,8 +23,12 @@
 #define PRINT_H
 
 int print(const char *format, ...);
+int vprint(const char *format, va_list ap);
 int printl(const char *format, ...);
+int vprintl(const char *format, va_list ap);
 int printerr(const char *format, ...);
+int vprinterr(const char *format, va_list ap);
 int printerrl(const char *format, ...);
+int vprinterrl(const char *format, va_list ap);
 
 #endif /* PRINT_H */
