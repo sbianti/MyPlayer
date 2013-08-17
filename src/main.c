@@ -28,6 +28,15 @@
 #include <signal.h>
 #include <stdio.h>
 
+#ifdef HAVE_TERMIOS
+#ifdef HAVE_TERMIOS_H
+#include <termios.h>
+#endif
+#ifdef HAVE_SYS_TERMIOS_H
+#include <sys/termios.h>
+#endif
+#endif
+
 #include <glib.h>
 
 #include "print.h"
@@ -38,9 +47,49 @@ static volatile sig_atomic_t terminated = 0;
 static myp_status_t status = SUCCESS;
 static gboolean option_quiet = FALSE;
 static gboolean option_version = FALSE;
+static gboolean termset = FALSE;
+#ifdef HAVE_TERMIOS
+static struct termios tio_orig;
+#endif
+
+static void set_terminal()
+{
+#ifdef HAVE_TERMIOS
+  struct termios tio_new;
+
+  if (isatty(0) != 1 || tcgetattr(0, &tio_orig) != 0) {
+    printerrl("%s", g_strcmp0(ttyname(0), "") == 0 ?
+	      "stdin is not a terminal":"tcgetattr failed !");
+    return;
+  }
+
+  tio_new = tio_orig;
+
+  tio_new.c_lflag &= ~(ECHO|ICANON);
+  tio_new.c_cc[VMIN] = 1;
+  tio_new.c_cc[VTIME] = 0;
+
+  if (tcsetattr(0, TCSANOW, &tio_new) == 0)
+    termset = TRUE;
+  else
+    printerr("tcsetattr failed !");
+#endif
+}
+
+static void reset_terminal()
+{
+  if (termset == FALSE)
+    return;
+
+#ifdef HAVE_TERMIOS
+  tcsetattr(0, TCSANOW, &tio_orig);
+#endif
+  termset = FALSE;
+}
 
 static void quit(int status)
 {
+  reset_terminal();
   exit(status);
 }
 
@@ -66,16 +115,24 @@ static void manage_options()
   }
 }
 
+static void enter_command_mode()
+{
+  printl("Command mode !!");
+}
+
 static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
 				myp_context_t ctx)
 {
-  gchar *str = NULL;
+  gchar car;
 
-  if (g_io_channel_read_line(source, &str, NULL, NULL, NULL) !=
+  if (g_io_channel_read_chars(source, &car, 1, NULL, NULL) !=
       G_IO_STATUS_NORMAL)
     return TRUE;
 
-  switch (g_ascii_tolower(str[0])) {
+  switch (car) {
+  case '':
+    enter_command_mode();
+    break;
   case 'q':
     g_main_loop_quit(ctx->loop);
     break;
@@ -97,7 +154,7 @@ static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
     printl("pause");
     break;
   default:
-    printl("No bind found for key '%c'", str[0]);
+    printl("No bind found for key '%c'", car);
   }
 
   return TRUE;
@@ -144,8 +201,11 @@ int main(int argc, char *argv[])
   if (playlist == NULL)
     quit(ERROR);
 
-  io_stdin = g_io_channel_unix_new(fileno(stdin));
-  g_io_add_watch(io_stdin, G_IO_IN, (GIOFunc)handle_keyboard, NULL);
+  io_stdin = g_io_channel_unix_new(0);
+
+  set_terminal();
+
+  g_io_add_watch(io_stdin, G_IO_IN, (GIOFunc)handle_keyboard, ctx);
 
   play(playlist);
   ctx->loop = g_main_loop_new(NULL, FALSE);
@@ -153,6 +213,7 @@ int main(int argc, char *argv[])
 
   g_main_loop_unref(ctx->loop);
   g_io_channel_unref(io_stdin);
+  reset_terminal();
 
   return status;
 }
