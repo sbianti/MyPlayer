@@ -34,7 +34,7 @@ myp_playlist_t myp_plst_parse_cmdline(int argc, char **argv)
   playlist->loop = FALSE;
   playlist->random = FALSE;
 
-  for (; argc > 0; argc--)
+  for (argc--; argc > 0; argc--)
     playlist->list = g_list_prepend(playlist->list, argv[argc]);
 
   return playlist;
