@@ -48,10 +48,13 @@ static volatile sig_atomic_t terminated = 0;
 static myp_status_t status = SUCCESS;
 static gboolean option_quiet = FALSE;
 static gboolean option_version = FALSE;
+static gboolean option_interactive_mode = FALSE;
 static gboolean termset = FALSE;
 #ifdef HAVE_TERMIOS
 static struct termios tio_orig;
 #endif
+
+#define USAGE "Usage:  myplayer [options] [url|path/]filename"
 
 static void set_terminal()
 {
@@ -88,8 +91,17 @@ static void reset_terminal()
   termset = FALSE;
 }
 
-static void quit(int status)
+static void quit(int status, char *format, ...)
 {
+  va_list args;
+
+  va_start(args, format);
+  if (status > SUCCESS)
+    vprinterrl(format, args);
+  else
+    vprintl(format, args);
+  va_end(args);
+
   reset_terminal();
   exit(status);
 }
@@ -100,8 +112,8 @@ static void sig_term(int sig)
     return;
 
   terminated = 1;
-  printl("killed by sig %d", sig);
-  quit(status);
+
+  quit(status, "killed by sig %d", sig);
 }
 
 static void manage_options()
@@ -176,23 +188,24 @@ int main(int argc, char *argv[])
       "doesn't print anything on stdout", NULL },
     { "version", 'v', 0, G_OPTION_ARG_NONE, &option_version,
       "print version and bye byes", NULL },
+    { "interactive-mode", 'i', 0, G_OPTION_ARG_NONE, &option_interactive_mode,
+      "doesn't quit if playlist is empty or finished", NULL},
     { NULL }
   };
 
   context = g_option_context_new("");
 
   g_option_context_add_main_entries(context, options, "");
-  if (!g_option_context_parse(context, &argc, &argv, &error)) {
-    printl("option parsing failed: %s", error->message);
-    quit(ERROR);
-  }
+  if (!g_option_context_parse(context, &argc, &argv, &error))
+    quit(ERROR, "option parsing failed: %s", error->message);
+
   g_option_context_free(context);
 
   ctx = myp_context_new();
 
   manage_options();
   if (status > SUCCESS)
-    quit(status);
+    quit(status, NULL);
 
   memset(&sa, 0, sizeof(sa));
   sa.sa_handler = sig_term;
@@ -201,7 +214,10 @@ int main(int argc, char *argv[])
 
   ctx->playlist = myp_plst_parse_cmdline(argc, argv);
   if (ctx->playlist == NULL)
-    quit(ERROR);
+    quit(ERROR, "myp_plst_parse_cmdline failed to create playlist");
+
+  if (myp_plst_is_empty(ctx->playlist) && !option_interactive_mode)
+    quit(ERROR, USAGE);
 
   io_stdin = g_io_channel_unix_new(0);
 
