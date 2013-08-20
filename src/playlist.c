@@ -40,40 +40,71 @@ myp_playlist_t myp_plst_parse_cmdline(int argc, char **argv)
   return playlist;
 }
 
-gboolean myp_plst_play(myp_playlist_t playlist)
+static gboolean prv_set_uri(myp_plugin_t myp_plugin, char *uri)
 {
-  if (myp_plst_is_empty(playlist))
-    return FALSE;
+  if (myp_plugin->seturi(uri) == TRUE)
+    return TRUE;
 
-  if (playlist->current == NULL)
-    playlist->current = playlist->list;
-
-  return TRUE;
+  printerrl("seturi <%s> failed", uri);
+  return FALSE;
 }
 
-gboolean myp_plst_stop(myp_playlist_t playlist)
-{
-  if (myp_plst_is_empty(playlist))
-    return FALSE;
-
-  return TRUE;
-}
-
-gboolean myp_plst_pause(myp_playlist_t playlist)
-{
-  if (myp_plst_is_empty(playlist))
-    return FALSE;
-
-  return TRUE;
-}
-
-gboolean myp_plst_next(myp_playlist_t playlist)
+gboolean myp_plst_play(myp_playlist_t playlist, myp_plugin_t myp_plugin)
 {
   if (myp_plst_is_empty(playlist))
     return FALSE;
 
   if (playlist->current == NULL) {
     playlist->current = playlist->list;
+    if (prv_set_uri(myp_plugin, (char *)(playlist->current->data)) == FALSE)
+      return FALSE;
+  }
+
+  myp_plugin->play();
+
+  return TRUE;
+}
+
+gboolean myp_plst_stop(myp_playlist_t playlist, myp_plugin_t myp_plugin)
+{
+  if (myp_plst_is_empty(playlist))
+    return FALSE;
+
+  myp_plugin->stop();
+
+  return TRUE;
+}
+
+gboolean myp_plst_pause(myp_playlist_t playlist, myp_plugin_t myp_plugin)
+{
+  if (myp_plst_is_empty(playlist))
+    return FALSE;
+
+  switch (myp_plugin->status()) {
+  case STATUS_PLAYING:
+    myp_plugin->pause();
+    break;
+  case STATUS_PAUSED:
+    myp_plugin->play();
+    break;
+  case STATUS_NULL:
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+gboolean myp_plst_next(myp_playlist_t playlist, myp_plugin_t myp_plugin)
+{
+  if (myp_plst_is_empty(playlist))
+    return FALSE;
+
+  if (playlist->current == NULL) {
+    playlist->current = playlist->list;
+    if (prv_set_uri(myp_plugin, (char *)(playlist->current->data)) == FALSE)
+      return FALSE;
+
+    myp_plugin->play();
     return TRUE;
   }
 
@@ -94,7 +125,7 @@ gboolean myp_plst_next(myp_playlist_t playlist)
   return TRUE;
 }
 
-gboolean myp_plst_pred(myp_playlist_t playlist)
+gboolean myp_plst_pred(myp_playlist_t playlist, myp_plugin_t myp_plugin)
 {
   if (myp_plst_is_empty(playlist))
     return FALSE;

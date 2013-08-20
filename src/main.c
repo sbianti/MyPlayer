@@ -46,6 +46,7 @@
 
 static volatile sig_atomic_t terminated = 0;
 static myp_status_t status = SUCCESS;
+static myp_context_t ctx;
 static gboolean option_quiet = FALSE;
 static gboolean option_version = FALSE;
 static gboolean option_interactive_mode = FALSE;
@@ -152,11 +153,11 @@ static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
   case '\n':
   case '>':
     printl("→ next !");
-    myp_plst_next(ctx->playlist);
+    myp_plst_next(ctx->playlist, ctx->myp_plugin);
     break;
   case '<':
     printl("← pred !");
-    myp_plst_pred(ctx->playlist);
+    myp_plst_pred(ctx->playlist, ctx->myp_plugin);
     break;
   case 'f':
     printl("Full screen !");
@@ -180,7 +181,7 @@ int main(int argc, char *argv[])
   struct sigaction sa;
   GError *error = NULL;
   GIOChannel *io_stdin;
-  myp_context_t ctx;
+  myp_plugin_t my_plugin;
   GOptionContext *context;
 
   GOptionEntry options[] = {
@@ -225,7 +226,11 @@ int main(int argc, char *argv[])
 
   g_io_add_watch(io_stdin, G_IO_IN, (GIOFunc)handle_keyboard, ctx);
 
-  myp_plst_play(ctx->playlist);
+  my_plugin = prepare_plugin();
+
+  myp_set_myp_plugin(ctx, my_plugin);
+
+  myp_plst_play(ctx->playlist, ctx->myp_plugin);
   ctx->process_loop = g_main_loop_new(NULL, FALSE);
   g_main_loop_run(ctx->process_loop);
 
