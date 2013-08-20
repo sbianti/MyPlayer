@@ -27,7 +27,7 @@
 struct __myp_playlist_t__ { /* la rendre opaque */
   GList *list;
   GList *current;
-  gboolean loop;
+  int loop;
   gboolean random;
 };
 

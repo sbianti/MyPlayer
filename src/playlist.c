@@ -31,7 +31,7 @@ myp_playlist_t myp_plst_parse_cmdline(int argc, char **argv)
 
   playlist->list = NULL;
   playlist->current = NULL;
-  playlist->loop = FALSE;
+  playlist->loop = 0;
   playlist->random = FALSE;
 
   for (argc--; argc > 0; argc--)
@@ -42,6 +42,9 @@ myp_playlist_t myp_plst_parse_cmdline(int argc, char **argv)
 
 gboolean myp_plst_play(myp_playlist_t playlist)
 {
+  if (myp_plst_is_empty(playlist))
+    return FALSE;
+
   if (playlist->current == NULL)
     playlist->current = playlist->list;
 
@@ -50,38 +53,70 @@ gboolean myp_plst_play(myp_playlist_t playlist)
 
 gboolean myp_plst_stop(myp_playlist_t playlist)
 {
+  if (myp_plst_is_empty(playlist))
+    return FALSE;
+
   return TRUE;
 }
 
 gboolean myp_plst_pause(myp_playlist_t playlist)
 {
+  if (myp_plst_is_empty(playlist))
+    return FALSE;
+
   return TRUE;
 }
 
 gboolean myp_plst_next(myp_playlist_t playlist)
 {
+  if (myp_plst_is_empty(playlist))
+    return FALSE;
+
   if (playlist->current == NULL) {
     playlist->current = playlist->list;
     return TRUE;
   }
 
   playlist->current = g_list_next(playlist->current);
-  if (playlist->current == NULL) {
-    if (playlist->loop == TRUE)
-      playlist->current = g_list_first(playlist->list);
+  if (playlist->current != NULL)
+    return TRUE;
+
+  if (playlist->loop == 0) {
+    playlist->current = g_list_last(playlist->list);
+    return FALSE;
   }
+
+  playlist->current = g_list_first(playlist->list);
+
+  if (playlist->loop != -1)
+    playlist->loop--;
 
   return TRUE;
 }
 
 gboolean myp_plst_pred(myp_playlist_t playlist)
 {
+  if (myp_plst_is_empty(playlist))
+    return FALSE;
+
   if (playlist->current == NULL) {
-    playlist->current = g_list_last(playlist->list);
+    playlist->current = playlist->list;
     return TRUE;
   }
 
-  playlist->current = g_list_previous(playlist->list);
+  playlist->current = g_list_previous(playlist->current);
+
+  if (playlist->current != NULL)
+    return TRUE;
+
+  if (playlist->loop == 0) {
+    playlist->current = playlist->list;
+    return FALSE;
+  }
+
+  playlist->current = g_list_last(playlist->list);
+  if (playlist->loop != -1)
+    playlist->loop++;
 
   return TRUE;
 }
