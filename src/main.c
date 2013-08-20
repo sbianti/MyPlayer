@@ -147,7 +147,7 @@ static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
     enter_command_mode();
     break;
   case 'q':
-    g_main_loop_quit(ctx->loop);
+    g_main_loop_quit(ctx->process_loop);
     break;
   case '\n':
   case '>':
@@ -226,10 +226,10 @@ int main(int argc, char *argv[])
   g_io_add_watch(io_stdin, G_IO_IN, (GIOFunc)handle_keyboard, ctx);
 
   myp_plst_play(ctx->playlist);
-  ctx->loop = g_main_loop_new(NULL, FALSE);
-  g_main_loop_run(ctx->loop);
+  ctx->process_loop = g_main_loop_new(NULL, FALSE);
+  g_main_loop_run(ctx->process_loop);
 
-  g_main_loop_unref(ctx->loop);
+  g_main_loop_unref(ctx->process_loop);
   g_io_channel_unref(io_stdin);
   reset_terminal();
 

@@ -25,16 +25,19 @@
 #include <glib.h>
 
 #include "playlist.h"
+#include "myp_plugin.h"
 
 enum __myp_status_t__ { SUCCESS, EXIT, ERROR };
 typedef enum __myp_status_t__ myp_status_t;
 
 struct __myp_context_t__ {
-  GMainLoop *loop;
+  GMainLoop *process_loop;
   myp_playlist_t playlist;
+  myp_plugin_t myp_plugin;
 };
 typedef struct __myp_context_t__* myp_context_t;
 
 myp_context_t myp_context_new();
 
+gboolean myp_set_myp_plugin(myp_context_t context, myp_plugin_t myp_plugin);
 #endif /* CONTEXT_H */
