@@ -75,7 +75,7 @@ static gboolean myp_seturi(char *uri)
 
 static void myp_play()
 {
-  puts("play");
+  g_print("playing %s\n", current_uri);
 }
 
 static void myp_pause()
