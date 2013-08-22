@@ -44,5 +44,9 @@ gboolean myp_plst_next(myp_playlist_t playlist, myp_plugin_t myp_plugin);
 gboolean myp_plst_pred(myp_playlist_t playlist, myp_plugin_t myp_plugin);
 
 gboolean myp_plst_is_empty(myp_playlist_t playlist);
+gboolean myp_plst_set_loop(myp_playlist_t playlist, int loop);
+int myp_plst_get_loop(myp_playlist_t playlist);
+gboolean myp_plst_set_random(myp_playlist_t playlist, gboolean random);
+gboolean myp_plst_get_random(myp_playlist_t playlist);
 
 #endif /* PLAYLIST_H */

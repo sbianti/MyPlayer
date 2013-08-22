@@ -50,6 +50,8 @@ static myp_context_t ctx;
 static gboolean option_quiet = FALSE;
 static gboolean option_version = FALSE;
 static gboolean option_interactive_mode = FALSE;
+static int option_loop = 0;
+static gboolean option_random = FALSE;
 static gboolean termset = FALSE;
 #ifdef HAVE_TERMIOS
 static struct termios tio_orig;
@@ -191,6 +193,10 @@ int main(int argc, char *argv[])
       "print version and bye byes", NULL },
     { "interactive-mode", 'i', 0, G_OPTION_ARG_NONE, &option_interactive_mode,
       "doesn't quit if playlist is empty or finished", NULL},
+    { "loop", 'l', 0, G_OPTION_ARG_INT, &option_loop,
+      "number of loop in the this playlist (0 means ∞)", NULL },
+    { "random", 'r', 0, G_OPTION_ARG_NONE, &option_random,
+      "play randomly in the playlist", NULL },
     { NULL }
   };
 
@@ -219,6 +225,11 @@ int main(int argc, char *argv[])
 
   if (myp_plst_is_empty(ctx->playlist) && !option_interactive_mode)
     quit(ERROR, USAGE);
+
+  myp_plst_set_random(ctx->playlist, option_random);
+  if (option_loop == 0)
+    option_loop = -1;
+  myp_plst_set_loop(ctx->playlist, option_loop);
 
   io_stdin = g_io_channel_unix_new(0);
 

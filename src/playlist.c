@@ -157,3 +157,23 @@ gboolean myp_plst_is_empty(myp_playlist_t playlist)
 {
   return playlist->list == NULL;
 }
+
+gboolean myp_plst_set_loop(myp_playlist_t playlist, int loop)
+{
+  playlist->loop = loop;
+}
+
+int myp_plst_get_loop(myp_playlist_t playlist)
+{
+  return playlist->loop;
+}
+
+gboolean myp_plst_set_random(myp_playlist_t playlist, gboolean random)
+{
+  playlist->random = random;
+}
+
+gboolean myp_plst_get_random(myp_playlist_t playlist)
+{
+  return playlist->random;
+}
