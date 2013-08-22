@@ -154,11 +154,9 @@ static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
     break;
   case '\n':
   case '>':
-    printl("→ next !");
     myp_plst_next(ctx->playlist, ctx->myp_plugin);
     break;
   case '<':
-    printl("← pred !");
     myp_plst_pred(ctx->playlist, ctx->myp_plugin);
     break;
   case 'f':
