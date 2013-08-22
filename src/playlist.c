@@ -94,62 +94,63 @@ gboolean myp_plst_pause(myp_playlist_t playlist, myp_plugin_t myp_plugin)
   return TRUE;
 }
 
-gboolean myp_plst_next(myp_playlist_t playlist, myp_plugin_t myp_plugin)
+gboolean prv_next_or_pred(myp_playlist_t playlist, myp_plugin_t myp_plugin,
+			  gboolean next)
 {
   if (myp_plst_is_empty(playlist))
     return FALSE;
 
   if (playlist->current == NULL) {
     playlist->current = playlist->list;
-    if (prv_set_uri(myp_plugin, (char *)(playlist->current->data)) == FALSE)
-      return FALSE;
-
-    myp_plugin->play();
-    return TRUE;
+    goto end;
   }
 
-  playlist->current = g_list_next(playlist->current);
+  if (next)
+    playlist->current = g_list_next(playlist->current);
+  else
+    playlist->current = g_list_previous(playlist->current);
+
   if (playlist->current != NULL)
-    return TRUE;
+    goto end;
 
   if (playlist->loop == 0) {
-    playlist->current = g_list_last(playlist->list);
+    if (next)
+      playlist->current = g_list_last(playlist->list);
+    else
+      playlist->current = playlist->list;
+
     return FALSE;
   }
 
-  playlist->current = g_list_first(playlist->list);
+  if (next)
+    playlist->current = g_list_first(playlist->list);
+  else
+    playlist->current = g_list_last(playlist->list);
 
-  if (playlist->loop != -1)
-    playlist->loop--;
+  if (playlist->loop != -1) {
+    if (next)
+      playlist->loop--;
+    else
+      playlist->loop++;
+  }
+
+  end:
+  if (prv_set_uri(myp_plugin, (char *)(playlist->current->data)) == FALSE)
+    return FALSE;
+
+  myp_plugin->play();
 
   return TRUE;
 }
 
+gboolean myp_plst_next(myp_playlist_t playlist, myp_plugin_t myp_plugin)
+{
+  return prv_next_or_pred(playlist, myp_plugin, TRUE);
+}
+
 gboolean myp_plst_pred(myp_playlist_t playlist, myp_plugin_t myp_plugin)
 {
-  if (myp_plst_is_empty(playlist))
-    return FALSE;
-
-  if (playlist->current == NULL) {
-    playlist->current = playlist->list;
-    return TRUE;
-  }
-
-  playlist->current = g_list_previous(playlist->current);
-
-  if (playlist->current != NULL)
-    return TRUE;
-
-  if (playlist->loop == 0) {
-    playlist->current = playlist->list;
-    return FALSE;
-  }
-
-  playlist->current = g_list_last(playlist->list);
-  if (playlist->loop != -1)
-    playlist->loop++;
-
-  return TRUE;
+  return prv_next_or_pred(playlist, myp_plugin, FALSE);
 }
 
 gboolean myp_plst_is_empty(myp_playlist_t playlist)
