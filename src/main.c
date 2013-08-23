@@ -50,7 +50,7 @@ static myp_context_t ctx;
 static gboolean option_quiet = FALSE;
 static gboolean option_version = FALSE;
 static gboolean option_interactive_mode = FALSE;
-static int option_loop = 0;
+static int option_loop = 1;
 static gboolean option_random = FALSE;
 static gboolean termset = FALSE;
 #ifdef HAVE_TERMIOS
@@ -224,10 +224,13 @@ int main(int argc, char *argv[])
   if (myp_plst_is_empty(ctx->playlist) && !option_interactive_mode)
     quit(ERROR, USAGE);
 
+  if (option_loop < 0) {
+    printerrl("Warning: loop < 0 is an illegal value. Set to default value 1");
+    option_loop = 1;
+  }
+
   myp_plst_set_random(ctx->playlist, option_random);
-  if (option_loop == 0)
-    option_loop = -1;
-  myp_plst_set_loop(ctx->playlist, option_loop);
+  myp_plst_set_loop(ctx->playlist, --option_loop);
 
   io_stdin = g_io_channel_unix_new(0);
 
