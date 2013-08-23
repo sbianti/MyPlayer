@@ -98,7 +98,7 @@ int printerrl(const char *format, ...)
 int vprinterrl(const char *format, va_list ap)
 {
   int ret = vfprintf(stderr, format, ap);
-  
+
   puts("");
 
   return ret+1;
