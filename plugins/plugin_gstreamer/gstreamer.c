@@ -24,14 +24,15 @@
 #endif
 
 #include <gst/gst.h>
+#include <gst/pbutils/pbutils.h>
 
 #include <myp_plugin.h>
+#include <print.h>
 
 static char *current_uri;
 
 static void myp_gst_init(int argc, char *argv[])
 {
-  puts("init");
   gst_init(&argc, &argv);
 }
 
@@ -73,9 +74,180 @@ static gboolean myp_seturi(char *uri)
   return FALSE;
 }
 
+static void finished_cb(GstDiscoverer *discoverer, void *null_data) {
+  printl("¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯");
+  gst_discoverer_stop(discoverer);
+}
+
+static void prv_print_tag_foreach(const GstTagList *tags, const gchar *tag,
+				  gpointer user_data) {
+  GValue val = { 0, };
+  gchar *str;
+  gint depth = GPOINTER_TO_INT(user_data);
+
+  gst_tag_list_copy_value(&val, tags, tag);
+
+  if (G_VALUE_HOLDS_STRING(&val))
+    str = g_value_dup_string(&val);
+  else
+    str = gst_value_serialize(&val);
+
+  printl("%*s%s: %s", 2 * depth, " ", gst_tag_get_nick(tag), str);
+  g_free(str);
+
+  g_value_unset(&val);
+}
+
+static void prv_print_stream_info(GstDiscovererStreamInfo *info, gint depth) {
+  gchar *desc = NULL;
+  GstCaps *caps;
+  const GstTagList *tags;
+
+  caps = gst_discoverer_stream_info_get_caps(info);
+
+  if (caps) {
+    if (gst_caps_is_fixed(caps))
+      desc = gst_pb_utils_get_codec_description(caps);
+    else
+      desc = gst_caps_to_string(caps);
+    gst_caps_unref(caps);
+  }
+
+  printl("%*s%s: %s", 2 * depth, " ",
+	 gst_discoverer_stream_info_get_stream_type_nick(info),
+	 (desc ? desc : ""));
+
+  if (desc) {
+    g_free(desc);
+    desc = NULL;
+  }
+
+  tags = gst_discoverer_stream_info_get_tags(info);
+  if (tags) {
+    printl("%*sTags:", 2 * (depth + 1), " ");
+    gst_tag_list_foreach(tags, prv_print_tag_foreach,
+			 GINT_TO_POINTER(depth + 2));
+    puts("");
+  }
+}
+
+static void prv_print_topology(GstDiscovererStreamInfo *info, gint depth) {
+  GstDiscovererStreamInfo *next;
+
+  if (!info)
+    return;
+
+  prv_print_stream_info(info, depth);
+
+  next = gst_discoverer_stream_info_get_next(info);
+  if (next) {
+    prv_print_topology(next, depth + 1);
+    gst_discoverer_stream_info_unref(next);
+  } else if (GST_IS_DISCOVERER_CONTAINER_INFO(info)) {
+    GList *tmp, *streams;
+
+    streams = gst_discoverer_container_info_get_streams
+      (GST_DISCOVERER_CONTAINER_INFO(info));
+
+    for (tmp = streams; tmp; tmp = tmp->next) {
+      GstDiscovererStreamInfo *tmpinf = (GstDiscovererStreamInfo *) tmp->data;
+      prv_print_topology(tmpinf, depth + 1);
+    }
+    gst_discoverer_stream_info_list_free(streams);
+  }
+}
+
+static void discovered_cb(GstDiscoverer *discoverer, GstDiscovererInfo *info,
+			  GError *err, void *null_data) {
+  GstDiscovererResult result;
+  const gchar *uri;
+  const GstTagList *tags;
+  GstDiscovererStreamInfo *sinfo;
+
+  uri = gst_discoverer_info_get_uri(info);
+  result = gst_discoverer_info_get_result(info);
+  switch (result) {
+  case GST_DISCOVERER_URI_INVALID:
+    printerrl("Invalid URI '%s'", uri);
+    break;
+  case GST_DISCOVERER_ERROR:
+    printerrl("Discoverer error: %s", err->message);
+    break;
+  case GST_DISCOVERER_TIMEOUT:
+    printerrl("Timeout");
+    break;
+  case GST_DISCOVERER_BUSY:
+    printerrl("Busy\n");
+    break;
+  case GST_DISCOVERER_MISSING_PLUGINS:{
+    const GstStructure *s = gst_discoverer_info_get_misc(info);
+    gchar *str = gst_structure_to_string(s);
+
+    printerrl("Missing plugins: %s", str);
+    g_free(str);
+    break;
+  }
+  case GST_DISCOVERER_OK:
+    break;
+  }
+
+  if (result != GST_DISCOVERER_OK) {
+    printerrl("<%s> cannot be played", uri);
+    return;
+  }
+
+  tags = gst_discoverer_info_get_tags(info);
+  if (tags) {
+    printl("Clip info:");
+    gst_tag_list_foreach(tags, prv_print_tag_foreach, GINT_TO_POINTER(1));
+  }
+
+  printl("Seekable: %s",
+	 gst_discoverer_info_get_seekable(info) ? "yes" : "no");
+
+  sinfo = gst_discoverer_info_get_stream_info(info);
+  if (!sinfo)
+    return;
+
+  printl("Stream information:");
+  prv_print_topology(sinfo, 0);
+
+  gst_discoverer_stream_info_unref(sinfo);
+
+  printl("Duration: %" GST_TIME_FORMAT "",
+  	  GST_TIME_ARGS(gst_discoverer_info_get_duration(info)));
+
+}
+
+static gboolean prv_discover(char *uri, GError **err)
+{
+  GstDiscoverer *discoverer = gst_discoverer_new(5*GST_SECOND, err);
+
+  if (discoverer == NULL)
+    return FALSE;
+
+  g_signal_connect(discoverer, "discovered", G_CALLBACK(discovered_cb), NULL);
+  g_signal_connect(discoverer, "finished", G_CALLBACK(finished_cb), NULL);
+
+  gst_discoverer_start(discoverer);
+
+  if (gst_discoverer_discover_uri_async(discoverer, uri) == FALSE) {
+    printerrl("Failed to start discovering URI '%s'", uri);
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
 static void myp_play()
 {
-  g_print("playing %s\n", current_uri);
+  GError *err = NULL;
+
+  printl("playing %s\n", current_uri);
+  if (prv_discover(current_uri, &err) == FALSE) {
+    printerrl("Error discovering uri %s:\n%s", current_uri, err->message);
+    g_clear_error(&err);
+  }
 }
 
 static void myp_pause()

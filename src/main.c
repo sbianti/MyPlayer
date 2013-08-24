@@ -242,6 +242,8 @@ int main(int argc, char *argv[])
 
   myp_set_myp_plugin(ctx, my_plugin);
 
+  ctx->myp_plugin->init(argc, argv);
+
   myp_plst_play(ctx->playlist, ctx->myp_plugin);
   ctx->process_loop = g_main_loop_new(NULL, FALSE);
   g_main_loop_run(ctx->process_loop);
