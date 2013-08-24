@@ -139,9 +139,9 @@ static void enter_command_mode()
 static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
 				myp_context_t ctx)
 {
-  gchar car;
+  gunichar car = 0;
 
-  if (g_io_channel_read_chars(source, &car, 1, NULL, NULL) !=
+  if (g_io_channel_read_unichar(source, &car, NULL) !=
       G_IO_STATUS_NORMAL)
     return TRUE;
 
@@ -170,7 +170,11 @@ static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
     printl("pause");
     break;
   default:
-    printerrl("No bind found for key '%c'", car);
+    printerr("No bind found for key ");
+    if (car < 127)
+      printerrl("%c", car);
+    else
+      printerrl("U+%04X", car);
   }
 
   return TRUE;
