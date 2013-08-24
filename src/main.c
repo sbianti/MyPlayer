@@ -170,7 +170,7 @@ static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
     printl("pause");
     break;
   default:
-    printl("No bind found for key '%c'", car);
+    printerrl("No bind found for key '%c'", car);
   }
 
   return TRUE;
@@ -228,6 +228,9 @@ int main(int argc, char *argv[])
     printerrl("Warning: loop < 0 is an illegal value. Set to default value 1");
     option_loop = 1;
   }
+
+  if (option_quiet)
+    fclose(stdout);
 
   myp_plst_set_random(ctx->playlist, option_random);
   myp_plst_set_loop(ctx->playlist, --option_loop);

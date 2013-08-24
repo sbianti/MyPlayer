@@ -90,7 +90,7 @@ int printerrl(const char *format, ...)
   ret = vfprintf(stderr, format, args);
   va_end(args);
 
-  puts("");
+  fputs("\n", stderr);
 
   return ret+1;
 }
@@ -99,7 +99,7 @@ int vprinterrl(const char *format, va_list ap)
 {
   int ret = vfprintf(stderr, format, ap);
 
-  puts("");
+  fputs("\n", stderr);
 
   return ret+1;
 }
