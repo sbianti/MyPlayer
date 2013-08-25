@@ -30,3 +30,7 @@ Faire des “binding” à la emacs : toute action est effectuée par une foncti
 ⋅ Man pages
 
 ⋅ Le graph de buffering ou autre doit tenir compte de la largeur du terminal (sinon, une fin de ligne est ajoutée à la sortie standard rendant l'affichage merdique) → être au courant des changements de taille du terminal.
+
+⋅ Pouvoir passer des «caps» au cas où le flux ne donne pas d'infos
+
+⋅ Voir SMPTE.
