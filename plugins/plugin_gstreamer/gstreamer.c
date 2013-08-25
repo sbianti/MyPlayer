@@ -30,6 +30,9 @@
 #include <print.h>
 
 static char *current_uri;
+static GstElement *pipeline;
+static GstBus *bus;
+static GstState state;
 
 static void myp_gst_init(int argc, char *argv[])
 {
@@ -244,25 +247,98 @@ static gboolean prv_discover(char *uri, GError **err)
   return TRUE;
 }
 
+static gboolean myp_stop()
+{
+  if (GST_IS_ELEMENT(pipeline) == FALSE)
+    return FALSE;
+
+  gst_object_unref(bus);
+  gst_element_set_state(pipeline, GST_STATE_NULL);
+  gst_object_unref(pipeline);
+
+  return TRUE;
+}
+
+static void pipeline_message_cb(GstBus *bus, GstMessage *msg, void *null_data)
+{
+  switch (GST_MESSAGE_TYPE(msg)) {
+  case GST_MESSAGE_ERROR: {
+    GError *err;
+    gchar *debug;
+
+    gst_message_parse_error(msg, &err, &debug);
+    printerrl("\nError: %s", err->message);
+    g_error_free(err);
+    g_free(debug);
+
+    gst_element_set_state(pipeline, GST_STATE_READY);
+    myp_stop();
+    break;
+  }
+  case GST_MESSAGE_STATE_CHANGED:
+    if (GST_MESSAGE_SRC(msg) == GST_OBJECT(pipeline))
+      gst_message_parse_state_changed(msg, NULL, &state, NULL);
+    break;
+  case GST_MESSAGE_EOS:
+    gst_element_set_state(pipeline, GST_STATE_READY);
+    myp_stop();
+    break;
+  default:
+    break;
+  }
+}
+
 static gboolean myp_play()
 {
   GError *err = NULL;
+  char *pipeline_str;
+
+  if (state == GST_STATE_PLAYING)
+    myp_stop();
 
   printl("playing %s\n", current_uri);
   if (prv_discover(current_uri, &err) == FALSE) {
     printerrl("Error discovering uri %s:\n%s", current_uri, err->message);
     g_clear_error(&err);
   }
+
+  pipeline_str = g_strdup_printf("playbin uri=%s", current_uri);
+
+  pipeline = gst_parse_launch(pipeline_str, NULL);
+  bus = gst_element_get_bus(pipeline);
+
+  g_free(pipeline_str);
+
+  if (gst_element_set_state(pipeline, GST_STATE_PLAYING) ==
+      GST_STATE_CHANGE_FAILURE) {
+    printerrl("Unable to set pipeline to plying state !");
+
+    gst_object_unref(bus);
+    gst_object_unref(pipeline);
+
+    return FALSE;
+  }
+
+  gst_bus_add_signal_watch(bus);
+  g_signal_connect(bus, "message", G_CALLBACK(pipeline_message_cb), NULL);
+
+  return TRUE;
 }
 
 static gboolean myp_play_pause()
 {
+  switch (state) {
+  case GST_STATE_PLAYING:
+    gst_element_set_state(pipeline, GST_STATE_PAUSED);
+    break;
+  case GST_STATE_PAUSED:
+    gst_element_set_state(pipeline, GST_STATE_PLAYING);
+    break;
+  default:
+    return FALSE;
+  }
 
-}
-
-static gboolean myp_stop()
-{
-
+  return TRUE;
 }
 
 static gboolean myp_set_prop()
@@ -272,7 +348,18 @@ static gboolean myp_set_prop()
 
 static enum myp_plugin_status_t myp_status()
 {
-  return STATUS_NULL;
+  switch (state) {
+  case GST_STATE_VOID_PENDING:
+  case GST_STATE_NULL:
+  case GST_STATE_READY:
+    return STATUS_NULL;
+
+  case GST_STATE_PAUSED:
+    return STATUS_PAUSED;
+
+  case GST_STATE_PLAYING:
+    return STATUS_PLAYING;
+  }
 }
 
 static char *myp_plugin_name()
