@@ -30,11 +30,12 @@ enum myp_plugin_status_t {
 
 struct __myp_plugin_t__ {
   void (*init)(int argc, char *argv[]);
+  void (*quit)();
   gboolean (*seturi)(char *uri);
-  void (*play)();
-  void (*pause)();
-  void (*stop)();
-  void (*set_prop)();
+  gboolean (*play)();
+  gboolean (*play_pause)();
+  gboolean (*stop)();
+  gboolean (*set_prop)();
   enum myp_plugin_status_t (*status)();
 
   char *(*plugin_name)();

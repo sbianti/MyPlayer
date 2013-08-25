@@ -36,6 +36,11 @@ static void myp_gst_init(int argc, char *argv[])
   gst_init(&argc, &argv);
 }
 
+static void myp_gst_quit()
+{
+  
+}
+
 static gboolean myp_seturi(char *uri)
 {
   if (g_strcmp0(uri, current_uri) == 0)
@@ -239,7 +244,7 @@ static gboolean prv_discover(char *uri, GError **err)
   return TRUE;
 }
 
-static void myp_play()
+static gboolean myp_play()
 {
   GError *err = NULL;
 
@@ -250,17 +255,17 @@ static void myp_play()
   }
 }
 
-static void myp_pause()
+static gboolean myp_play_pause()
 {
 
 }
 
-static void myp_stop()
+static gboolean myp_stop()
 {
 
 }
 
-static void myp_set_prop()
+static gboolean myp_set_prop()
 {
 
 }
@@ -290,9 +295,10 @@ myp_plugin_t prepare_plugin()
   myp_plugin_t gst_plugin = MYP_PLUGIN_NEW();
 
   gst_plugin->init = myp_gst_init;
+  gst_plugin->quit = myp_gst_quit;
   gst_plugin->seturi = myp_seturi;
   gst_plugin->play = myp_play;
-  gst_plugin->pause = myp_pause;
+  gst_plugin->play_pause = myp_play_pause;
   gst_plugin->stop = myp_stop;
   gst_plugin->set_prop = myp_set_prop;
   gst_plugin->status = myp_status;

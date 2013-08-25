@@ -60,9 +60,7 @@ gboolean myp_plst_play(myp_playlist_t playlist, myp_plugin_t myp_plugin)
       return FALSE;
   }
 
-  myp_plugin->play();
-
-  return TRUE;
+  return myp_plugin->play();
 }
 
 gboolean myp_plst_stop(myp_playlist_t playlist, myp_plugin_t myp_plugin)
@@ -75,23 +73,12 @@ gboolean myp_plst_stop(myp_playlist_t playlist, myp_plugin_t myp_plugin)
   return TRUE;
 }
 
-gboolean myp_plst_pause(myp_playlist_t playlist, myp_plugin_t myp_plugin)
+gboolean myp_plst_play_pause(myp_playlist_t playlist, myp_plugin_t myp_plugin)
 {
   if (myp_plst_is_empty(playlist))
     return FALSE;
 
-  switch (myp_plugin->status()) {
-  case STATUS_PLAYING:
-    myp_plugin->pause();
-    break;
-  case STATUS_PAUSED:
-    myp_plugin->play();
-    break;
-  case STATUS_NULL:
-    return FALSE;
-  }
-
-  return TRUE;
+  return myp_plugin->play_pause();
 }
 
 gboolean prv_next_or_pred(myp_playlist_t playlist, myp_plugin_t myp_plugin,
