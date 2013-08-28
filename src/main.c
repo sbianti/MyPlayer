@@ -59,6 +59,10 @@ static struct termios tio_orig;
 
 #define USAGE "Usage:  myplayer [options] [url|path/]filename"
 
+#define PAGE_UP_KEY 0
+#define PAGE_DOWN_KEY 1
+#define HOME_OR_END_KEY 2
+
 static void set_terminal()
 {
 #ifdef HAVE_TERMIOS
@@ -136,14 +140,106 @@ static void enter_command_mode()
   printl("Command mode !!");
 }
 
+static gboolean prv_exec_command_third_char_special_sequence(char car,
+							     gboolean *next_is,
+							     myp_context_t ctx)
+{
+  switch (car) {
+  case 'A':
+    printl("En haut !");
+    break;
+  case 'B':
+    printl("En bas !");
+    break;
+  case 'C':
+    printl("à droite!");
+    break;
+  case 'D':
+    printl("à gauche");
+    break;
+  case '5':
+    next_is[PAGE_UP_KEY] = TRUE;
+    break;
+  case '6':
+    next_is[PAGE_DOWN_KEY] = TRUE;
+    break;
+  default:
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+static gboolean prv_exec_command_last_char_special_sequence(char car,
+							    gboolean *next_is,
+							    myp_context_t ctx)
+{
+  gboolean ret = TRUE;
+
+  switch (car) {
+  case 'H':
+    if (next_is[HOME_OR_END_KEY])
+      printl("HAUT DE PAGE !");
+    else
+      ret = FALSE;
+    break;
+  case 'F':
+    if (next_is[HOME_OR_END_KEY])
+      printl("FIN de PAGE !");
+    else
+      ret = FALSE;
+    break;
+  case '~':
+    if (next_is[PAGE_UP_KEY])
+      printl("Page vers le haut !");
+    else if (next_is[PAGE_DOWN_KEY])
+      printl("Page vers le bas");
+    else
+      ret = FALSE;
+    break;
+  default:
+    ret = FALSE;
+  }
+
+  next_is[HOME_OR_END_KEY] = FALSE;
+  next_is[PAGE_UP_KEY] = FALSE;
+  next_is[PAGE_DOWN_KEY] = FALSE;
+
+  return ret;
+}
+
 static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
 				myp_context_t ctx)
 {
+  static gboolean echap[2] = { FALSE, FALSE };
+  static gboolean next_is[3] = { FALSE, FALSE, FALSE };
   gunichar car = 0;
 
   if (g_io_channel_read_unichar(source, &car, NULL) !=
       G_IO_STATUS_NORMAL)
     return TRUE;
+
+  if (echap[0] && !echap[1]) {
+    if (car == '[')
+      return echap[1] = TRUE;
+    else {
+      echap[0] = FALSE;
+      if (car == 'O')
+	return next_is[HOME_OR_END_KEY] = TRUE;
+    }
+  }
+
+  if (echap[0] && echap[1]) {
+    echap[0] = FALSE;
+    echap[1] = FALSE;
+    if (prv_exec_command_third_char_special_sequence(car, next_is, ctx))
+      return TRUE;
+  }
+
+  if (next_is[0] || next_is[1] || next_is[2]) {
+    if (prv_exec_command_last_char_special_sequence(car, next_is, ctx))
+      return TRUE;
+  }
 
   switch (car) {
   case '':
@@ -168,6 +264,9 @@ static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
   case 'p':
   case ' ':
     printl("pause");
+    break;
+  case '':
+    echap[0] = TRUE;
     break;
   default:
     printerr("No bind found for key ");
