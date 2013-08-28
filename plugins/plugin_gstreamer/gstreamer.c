@@ -33,15 +33,27 @@ static char *current_uri;
 static GstElement *pipeline;
 static GstBus *bus;
 static GstState state;
+static char *plugin_info;
+
+#define PLUGIN_NAME "MypGStreamer"
+#define MYP_GST_VERSION "0.0.1"
 
 static void myp_gst_init(int argc, char *argv[])
 {
+  guint major, minor, micro, nano;
+
   gst_init(&argc, &argv);
+  gst_version(&major, &minor, &micro, &nano);
+  plugin_info = g_strdup_printf("Plugin GStreamer for Myplayer based on "
+				"GStreamer-%d.%d.%d.%d",
+				major, minor, micro, nano);
 }
 
 static void myp_gst_quit()
 {
-  
+  printl("%s says bye bye!", PLUGIN_NAME);
+  g_free(plugin_info);
+  gst_deinit();
 }
 
 static gboolean myp_seturi(char *uri)
@@ -362,19 +374,19 @@ static enum myp_plugin_status_t myp_status()
   }
 }
 
-static char *myp_plugin_name()
+static const char *myp_plugin_name()
 {
-
+  return PLUGIN_NAME;
 }
 
-static char *myp_plugin_version()
+static const char *myp_plugin_version()
 {
-
+  return MYP_GST_VERSION;
 }
 
-static char *myp_plugin_info()
+static const char *myp_plugin_info()
 {
-
+  return plugin_info;
 }
 
 myp_plugin_t prepare_plugin()

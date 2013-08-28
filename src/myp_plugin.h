@@ -38,9 +38,9 @@ struct __myp_plugin_t__ {
   gboolean (*set_prop)();
   enum myp_plugin_status_t (*status)();
 
-  char *(*plugin_name)();
-  char *(*plugin_version)();
-  char *(*plugin_info)();
+  const char *(*plugin_name)();
+  const char *(*plugin_version)();
+  const char *(*plugin_info)();
 };
 
 typedef struct __myp_plugin_t__* myp_plugin_t;

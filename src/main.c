@@ -350,6 +350,11 @@ int main(int argc, char *argv[])
 
   ctx->myp_plugin->init(argc, argv);
 
+  printl("We are using %s version %s\n with more infos:%s",
+	 ctx->myp_plugin->plugin_name(),
+	 ctx->myp_plugin->plugin_version(),
+	 ctx->myp_plugin->plugin_info());
+
   myp_plst_play(ctx->playlist, ctx->myp_plugin);
   ctx->process_loop = g_main_loop_new(NULL, FALSE);
   g_main_loop_run(ctx->process_loop);
