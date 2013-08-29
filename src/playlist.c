@@ -60,7 +60,7 @@ gboolean myp_plst_play(myp_playlist_t playlist, myp_plugin_t myp_plugin)
       return FALSE;
   }
 
-  return myp_plugin->play();
+  return myp_plugin->play(1.0);
 }
 
 gboolean myp_plst_stop(myp_playlist_t playlist, myp_plugin_t myp_plugin)
@@ -125,7 +125,7 @@ gboolean prv_next_or_pred(myp_playlist_t playlist, myp_plugin_t myp_plugin,
   if (prv_set_uri(myp_plugin, (char *)(playlist->current->data)) == FALSE)
     return FALSE;
 
-  myp_plugin->play();
+  myp_plugin->play(1.0);
 
   return TRUE;
 }

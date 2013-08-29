@@ -37,7 +37,9 @@ static char *plugin_info;
 
 static gboolean current_stream_is_seekable;
 static gint64 current_duration;
+static gdouble current_speed;
 static gboolean stream_initiated;
+static GstElement *video_sink;
 
 #define PLUGIN_NAME "MypGStreamer"
 #define MYP_GST_VERSION "0.0.1"
@@ -64,6 +66,7 @@ static gboolean myp_stop()
 
   stream_initiated = FALSE;
   current_stream_is_seekable = FALSE;
+  video_sink = NULL;
 
   return TRUE;
 }
@@ -283,6 +286,38 @@ static gboolean prv_discover(char *uri, GError **err)
   return TRUE;
 }
 
+static gboolean myp_set_speed(gboolean relative, gdouble val)
+{
+  GstEvent *seek_event;
+
+  if (relative)
+    current_speed = current_speed * val;
+  else
+    current_speed = val;
+
+  seek_event =
+    gst_event_new_seek(current_speed, GST_FORMAT_TIME,
+		       GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE,
+		       GST_SEEK_TYPE_NONE, -1, GST_SEEK_TYPE_NONE, -1);
+
+  if (video_sink == NULL)
+    g_object_get(pipeline, "video-sink", &video_sink, NULL);
+
+  gst_element_send_event(video_sink, seek_event);
+}
+
+static gboolean myp_step(int n_frame)
+{
+  if (video_sink == NULL)
+    g_object_get(pipeline, "video-sink", &video_sink, NULL);
+
+  gst_element_set_state(pipeline, GST_STATE_PAUSED);
+
+  gst_element_send_event(video_sink,
+			 gst_event_new_step(GST_FORMAT_BUFFERS, n_frame,
+					    current_speed, TRUE, FALSE));
+}
+
 static void prv_init_stream_attributes()
 {
   GstQuery *query = gst_query_new_seeking(GST_FORMAT_TIME);
@@ -299,6 +334,9 @@ static void prv_init_stream_attributes()
   if (!gst_element_query_duration(pipeline, GST_FORMAT_TIME,
 				  &current_duration))
     printerrl("/!\\ Could not query current duration. /!\\");
+
+  if (current_speed != 1.0)
+    myp_set_speed(FALSE, current_speed);
 
   stream_initiated = TRUE;
 }
@@ -337,7 +375,7 @@ static void pipeline_message_cb(GstBus *bus, GstMessage *msg, void *null_data)
   }
 }
 
-static gboolean myp_play()
+static gboolean myp_play(gdouble speed)
 {
   GError *err = NULL;
   char *pipeline_str;
@@ -357,6 +395,8 @@ static gboolean myp_play()
   bus = gst_element_get_bus(pipeline);
 
   g_free(pipeline_str);
+
+  current_speed = speed;
 
   if (gst_element_set_state(pipeline, GST_STATE_PLAYING) ==
       GST_STATE_CHANGE_FAILURE) {
@@ -470,6 +510,8 @@ myp_plugin_t prepare_plugin()
   gst_plugin->stop = myp_stop;
   gst_plugin->seek = myp_seek;
   gst_plugin->set_pos = myp_set_pos;
+  gst_plugin->set_speed = myp_set_speed;
+  gst_plugin->step = myp_step;
   gst_plugin->set_prop = myp_set_prop;
   gst_plugin->status = myp_status;
   gst_plugin->plugin_name = myp_plugin_name;

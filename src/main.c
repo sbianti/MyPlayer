@@ -265,6 +265,24 @@ static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
   case ' ':
     ctx->myp_plugin->play_pause();
     break;
+  case '{':
+    ctx->myp_plugin->set_speed(TRUE, 0.5);
+    break;
+  case '}':
+    ctx->myp_plugin->set_speed(TRUE, 2.0);
+    break;
+  case '[':
+    ctx->myp_plugin->set_speed(TRUE, 0.9);
+    break;
+  case ']':
+    ctx->myp_plugin->set_speed(TRUE, 1.1);
+    break;
+  case '':
+    ctx->myp_plugin->set_speed(FALSE, 1.0);
+    break;
+  case '.':
+    ctx->myp_plugin->step(1);
+    break;
   case '':
     echap[0] = TRUE;
     break;

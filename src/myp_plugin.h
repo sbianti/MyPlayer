@@ -32,11 +32,13 @@ struct __myp_plugin_t__ {
   void (*init)(int argc, char *argv[]);
   void (*quit)();
   gboolean (*seturi)(char *uri);
-  gboolean (*play)();
+  gboolean (*play)(gdouble speed);
   gboolean (*play_pause)();
   gboolean (*stop)();
   gboolean (*seek)(gint64 seek);
   gboolean (*set_pos)(gint64 pos);
+  gboolean (*set_speed)(gboolean relative, gdouble val);
+  gboolean (*step)(int n_frame);
   gboolean (*set_prop)();
   enum myp_plugin_status_t (*status)();
 
