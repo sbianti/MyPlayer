@@ -146,16 +146,16 @@ static gboolean prv_exec_command_third_char_special_sequence(char car,
 {
   switch (car) {
   case 'A':
-    printl("En haut !");
+    ctx->myp_plugin->seek(60);
     break;
   case 'B':
-    printl("En bas !");
+    ctx->myp_plugin->seek(-60);
     break;
   case 'C':
-    printl("à droite!");
+    ctx->myp_plugin->seek(10);
     break;
   case 'D':
-    printl("à gauche");
+    ctx->myp_plugin->seek(-10);
     break;
   case '5':
     next_is[PAGE_UP_KEY] = TRUE;
@@ -179,21 +179,21 @@ static gboolean prv_exec_command_last_char_special_sequence(char car,
   switch (car) {
   case 'H':
     if (next_is[HOME_OR_END_KEY])
-      printl("HAUT DE PAGE !");
+      ctx->myp_plugin->set_pos(0);
     else
       ret = FALSE;
     break;
   case 'F':
     if (next_is[HOME_OR_END_KEY])
-      printl("FIN de PAGE !");
+      ctx->myp_plugin->set_pos(-1);
     else
       ret = FALSE;
     break;
   case '~':
     if (next_is[PAGE_UP_KEY])
-      printl("Page vers le haut !");
+      ctx->myp_plugin->seek(600);
     else if (next_is[PAGE_DOWN_KEY])
-      printl("Page vers le bas");
+      ctx->myp_plugin->seek(-600);
     else
       ret = FALSE;
     break;
@@ -263,7 +263,7 @@ static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
     break;
   case 'p':
   case ' ':
-    printl("pause");
+    ctx->myp_plugin->play_pause();
     break;
   case '':
     echap[0] = TRUE;

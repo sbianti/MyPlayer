@@ -35,6 +35,10 @@ static GstBus *bus;
 static GstState state;
 static char *plugin_info;
 
+static gboolean current_stream_is_seekable;
+static gint64 current_duration;
+static gboolean stream_initiated;
+
 #define PLUGIN_NAME "MypGStreamer"
 #define MYP_GST_VERSION "0.0.1"
 
@@ -49,10 +53,30 @@ static void myp_gst_init(int argc, char *argv[])
 				major, minor, micro, nano);
 }
 
+static gboolean myp_stop()
+{
+  if (GST_IS_ELEMENT(pipeline) == FALSE)
+    return FALSE;
+
+  gst_object_unref(bus);
+  gst_element_set_state(pipeline, GST_STATE_NULL);
+  gst_object_unref(pipeline);
+
+  stream_initiated = FALSE;
+  current_stream_is_seekable = FALSE;
+
+  return TRUE;
+}
+
 static void myp_gst_quit()
 {
   printl("%s says bye bye!", PLUGIN_NAME);
+
+  if (GST_IS_ELEMENT(pipeline))
+    myp_stop();
+
   g_free(plugin_info);
+
   gst_deinit();
 }
 
@@ -259,16 +283,24 @@ static gboolean prv_discover(char *uri, GError **err)
   return TRUE;
 }
 
-static gboolean myp_stop()
+static void prv_init_stream_attributes()
 {
-  if (GST_IS_ELEMENT(pipeline) == FALSE)
-    return FALSE;
+  GstQuery *query = gst_query_new_seeking(GST_FORMAT_TIME);
+  gint64 start, end;
 
-  gst_object_unref(bus);
-  gst_element_set_state(pipeline, GST_STATE_NULL);
-  gst_object_unref(pipeline);
+  if (gst_element_query(pipeline, query)) {
+    gst_query_parse_seeking(query, NULL, &current_stream_is_seekable,
+			    &start, &end);
 
-  return TRUE;
+    if (current_stream_is_seekable == FALSE)
+      printl("This stream is not seekable");
+  }
+
+  if (!gst_element_query_duration(pipeline, GST_FORMAT_TIME,
+				  &current_duration))
+    printerrl("/!\\ Could not query current duration. /!\\");
+
+  stream_initiated = TRUE;
 }
 
 static void pipeline_message_cb(GstBus *bus, GstMessage *msg, void *null_data)
@@ -288,8 +320,13 @@ static void pipeline_message_cb(GstBus *bus, GstMessage *msg, void *null_data)
     break;
   }
   case GST_MESSAGE_STATE_CHANGED:
-    if (GST_MESSAGE_SRC(msg) == GST_OBJECT(pipeline))
-      gst_message_parse_state_changed(msg, NULL, &state, NULL);
+    if (GST_MESSAGE_SRC(msg) != GST_OBJECT(pipeline))
+      break;
+
+    gst_message_parse_state_changed(msg, NULL, &state, NULL);
+
+    if (stream_initiated == FALSE && state == GST_STATE_PAUSED)
+	prv_init_stream_attributes();
     break;
   case GST_MESSAGE_EOS:
     gst_element_set_state(pipeline, GST_STATE_READY);
@@ -323,7 +360,7 @@ static gboolean myp_play()
 
   if (gst_element_set_state(pipeline, GST_STATE_PLAYING) ==
       GST_STATE_CHANGE_FAILURE) {
-    printerrl("Unable to set pipeline to plying state !");
+    printerrl("Unable to set pipeline to playing state !");
 
     gst_object_unref(bus);
     gst_object_unref(pipeline);
@@ -351,6 +388,38 @@ static gboolean myp_play_pause()
   }
 
   return TRUE;
+}
+
+static gboolean myp_seek(gint64 seek)
+{
+  gint64 current_pos = 0;
+  gint64 new_pos;
+
+  if (current_stream_is_seekable == FALSE)
+    return FALSE;
+
+  if (!gst_element_query_position(pipeline, GST_FORMAT_TIME, &current_pos))
+    printerrl("/!\\ Could not query current position. /!\\");
+
+  new_pos = seek * GST_SECOND + current_pos;
+  if (new_pos < 0)
+    new_pos = 0;
+  else if (new_pos > current_duration)
+    new_pos = current_duration;
+
+  return gst_element_seek_simple(pipeline, GST_FORMAT_TIME,
+				 GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_KEY_UNIT,
+				 new_pos);
+}
+
+static gboolean myp_set_pos(gint64 pos)
+{
+  if (pos == -1)
+    pos = current_duration;
+
+  return gst_element_seek_simple(pipeline, GST_FORMAT_TIME,
+				 GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_KEY_UNIT,
+				 pos);
 }
 
 static gboolean myp_set_prop()
@@ -399,6 +468,8 @@ myp_plugin_t prepare_plugin()
   gst_plugin->play = myp_play;
   gst_plugin->play_pause = myp_play_pause;
   gst_plugin->stop = myp_stop;
+  gst_plugin->seek = myp_seek;
+  gst_plugin->set_pos = myp_set_pos;
   gst_plugin->set_prop = myp_set_prop;
   gst_plugin->status = myp_status;
   gst_plugin->plugin_name = myp_plugin_name;
