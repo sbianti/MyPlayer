@@ -26,10 +26,16 @@
 #include <gst/gst.h>
 #include <gst/pbutils/pbutils.h>
 
+#include <stdio.h>
+
 #include <myp_plugin.h>
 #include <print.h>
 
 #define TIME_FORMAT "u:%02u:%2.1f"
+#define A_TIME_FORMAT "A: %"TIME_FORMAT
+#define V_TIME_FORMAT "V: %"TIME_FORMAT
+#define AV_TIME_FORMAT A_TIME_FORMAT" "V_TIME_FORMAT" A-V: %.3f"
+#define SPEED_FORMAT "speed: %.1f"
 
 #define HOURS(nanosec) (guint) (nanosec / (3600 * GST_SECOND))
 #define MINUTES(nanosec) (guint) ((nanosec / (60 * GST_SECOND)) % 60)
@@ -47,6 +53,18 @@ static gint64 current_duration;
 static gdouble current_speed;
 static gboolean stream_initiated;
 static GstElement *video_sink;
+static GstElement *audio_sink;
+static int stream_type;
+
+#define TIMELINE_VISIBLE "timeline-visible"
+struct {
+  gboolean timeline_visible;
+} prop;
+
+enum {
+  CONTAINS_VIDEO = 0x1,
+  CONTAINS_AUDIO = 0x2
+};
 
 #define PLUGIN_NAME "MypGStreamer"
 #define MYP_GST_VERSION "0.0.1"
@@ -60,6 +78,8 @@ static void myp_gst_init(int argc, char *argv[])
   plugin_info = g_strdup_printf("Plugin GStreamer for Myplayer based on "
 				"GStreamer-%d.%d.%d.%d",
 				major, minor, micro, nano);
+
+  prop.timeline_visible = TRUE;
 }
 
 static gboolean myp_stop()
@@ -74,6 +94,7 @@ static gboolean myp_stop()
   stream_initiated = FALSE;
   current_stream_is_seekable = FALSE;
   video_sink = NULL;
+  audio_sink = NULL;
 
   return TRUE;
 }
@@ -307,22 +328,67 @@ static gboolean myp_set_speed(gboolean relative, gdouble val)
 		       GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE,
 		       GST_SEEK_TYPE_NONE, -1, GST_SEEK_TYPE_NONE, -1);
 
-  if (video_sink == NULL)
-    g_object_get(pipeline, "video-sink", &video_sink, NULL);
+  if (GST_IS_ELEMENT(video_sink))
+    gst_element_send_event(video_sink, seek_event);
+  else
+    gst_element_send_event(audio_sink, seek_event);
 
-  gst_element_send_event(video_sink, seek_event);
+  return TRUE;
 }
 
 static gboolean myp_step(int n_frame)
 {
-  if (video_sink == NULL)
-    g_object_get(pipeline, "video-sink", &video_sink, NULL);
+  if (GST_IS_ELEMENT(video_sink) == FALSE)
+    return FALSE;
 
   gst_element_set_state(pipeline, GST_STATE_PAUSED);
 
   gst_element_send_event(video_sink,
 			 gst_event_new_step(GST_FORMAT_BUFFERS, n_frame,
 					    current_speed, TRUE, FALSE));
+
+  return TRUE;
+}
+
+static gint64 get_position(GstElement *element)
+{
+  gint64 current_pos = 0;
+
+  if (!gst_element_query_position(element, GST_FORMAT_TIME, &current_pos))
+    return -1;
+
+  return current_pos;
+}
+
+static gboolean prv_refresh_ui(void *null_data)
+{
+  gint64 a_pos, v_pos;
+
+  if (state == GST_STATE_PAUSED)
+    return TRUE;
+  if (state < GST_STATE_PAUSED)
+    return FALSE;
+
+  switch (stream_type) {
+  case CONTAINS_VIDEO:
+    print(V_TIME_FORMAT" "SPEED_FORMAT"\r",
+	  TIME_ARGS(get_position(video_sink)), current_speed);
+    break;
+  case CONTAINS_AUDIO:
+    print(A_TIME_FORMAT" "SPEED_FORMAT"\r",
+    	  TIME_ARGS(get_position(audio_sink)), current_speed);
+    break;
+  case CONTAINS_VIDEO | CONTAINS_AUDIO:
+    a_pos = get_position(audio_sink);
+    v_pos = get_position(video_sink);
+    print(AV_TIME_FORMAT" "SPEED_FORMAT"\r", TIME_ARGS(a_pos), TIME_ARGS(v_pos),
+	  (float)(a_pos - v_pos) / GST_SECOND, current_speed);
+    break;
+  }
+
+  fflush(stdout);
+
+  return TRUE;
 }
 
 static void prv_init_stream_attributes()
@@ -344,6 +410,20 @@ static void prv_init_stream_attributes()
 
   if (current_speed != 1.0)
     myp_set_speed(FALSE, current_speed);
+
+  stream_type = 0;
+
+  g_object_get(pipeline, "video-sink", &video_sink, NULL);
+  g_object_get(pipeline, "audio-sink", &audio_sink, NULL);
+
+  if (GST_IS_ELEMENT(video_sink))
+    stream_type = CONTAINS_VIDEO;
+
+  if (GST_IS_ELEMENT(audio_sink))
+    stream_type += CONTAINS_AUDIO;
+
+  if (prop.timeline_visible)
+    g_timeout_add(100, (GSourceFunc)prv_refresh_ui, NULL);
 
   stream_initiated = TRUE;
 }
@@ -445,7 +525,8 @@ static gboolean myp_seek(gint64 seek)
   if (current_stream_is_seekable == FALSE)
     return FALSE;
 
-  if (!gst_element_query_position(pipeline, GST_FORMAT_TIME, &current_pos))
+  current_pos = get_position(pipeline);
+  if (current_pos == -1)
     printerrl("/!\\ Could not query current position. /!\\");
 
   new_pos = seek * GST_SECOND + current_pos;
@@ -469,9 +550,16 @@ static gboolean myp_set_pos(gint64 pos)
 				 pos);
 }
 
-static gboolean myp_set_prop()
+static gboolean myp_set_prop(const char *name, gboolean activate)
 {
+  gboolean ret = TRUE;
 
+  if (g_strcmp0(name, TIMELINE_VISIBLE) == 0)
+    prop.timeline_visible = activate;
+  else
+    ret = FALSE;
+
+  return ret;
 }
 
 static enum myp_plugin_status_t myp_status()

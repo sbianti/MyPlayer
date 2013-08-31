@@ -52,6 +52,7 @@ static gboolean option_version = FALSE;
 static gboolean option_interactive_mode = FALSE;
 static int option_loop = 1;
 static gboolean option_random = FALSE;
+static gboolean option_hide_timeline = FALSE;
 static gboolean termset = FALSE;
 #ifdef HAVE_TERMIOS
 static struct termios tio_orig;
@@ -316,6 +317,8 @@ int main(int argc, char *argv[])
       "number of loop in the this playlist (0 means ∞)", NULL },
     { "random", 'r', 0, G_OPTION_ARG_NONE, &option_random,
       "play randomly in the playlist", NULL },
+    { "hide-timeline", '\0', 0, G_OPTION_ARG_NONE, &option_hide_timeline,
+      "doesn't display the timeline", NULL },
     { NULL }
   };
 
@@ -372,6 +375,9 @@ int main(int argc, char *argv[])
 	 ctx->myp_plugin->plugin_name(),
 	 ctx->myp_plugin->plugin_version(),
 	 ctx->myp_plugin->plugin_info());
+
+  if (option_hide_timeline)
+    ctx->myp_plugin->set_prop("timeline-visible", FALSE);
 
   myp_plst_play(ctx->playlist, ctx->myp_plugin);
   ctx->process_loop = g_main_loop_new(NULL, FALSE);

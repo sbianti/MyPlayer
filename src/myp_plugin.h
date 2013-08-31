@@ -39,7 +39,7 @@ struct __myp_plugin_t__ {
   gboolean (*set_pos)(gint64 pos);
   gboolean (*set_speed)(gboolean relative, gdouble val);
   gboolean (*step)(int n_frame);
-  gboolean (*set_prop)();
+  gboolean (*set_prop)(const char *name, gboolean activate);
   enum myp_plugin_status_t (*status)();
 
   const char *(*plugin_name)();
