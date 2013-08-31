@@ -95,13 +95,14 @@ static gboolean myp_stop()
   current_stream_is_seekable = FALSE;
   video_sink = NULL;
   audio_sink = NULL;
+  state = GST_STATE_NULL;
 
   return TRUE;
 }
 
 static void myp_gst_quit()
 {
-  printl("%s says bye bye!", PLUGIN_NAME);
+  printl("\n%s says bye bye!", PLUGIN_NAME);
 
   if (GST_IS_ELEMENT(pipeline))
     myp_stop();
@@ -366,8 +367,10 @@ static gboolean prv_refresh_ui(void *null_data)
 
   if (state == GST_STATE_PAUSED)
     return TRUE;
-  if (state < GST_STATE_PAUSED)
+  if (state < GST_STATE_PAUSED) {
+    puts("");
     return FALSE;
+  }
 
   switch (stream_type) {
   case CONTAINS_VIDEO:
