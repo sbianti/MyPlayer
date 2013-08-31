@@ -383,6 +383,10 @@ int main(int argc, char *argv[])
   ctx->process_loop = g_main_loop_new(NULL, FALSE);
   g_main_loop_run(ctx->process_loop);
 
+  ctx->myp_plugin->quit();
+
+  printl("Exiting… (Quit)");
+
   g_main_loop_unref(ctx->process_loop);
   g_io_channel_unref(io_stdin);
   reset_terminal();
