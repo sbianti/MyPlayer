@@ -29,6 +29,13 @@
 #include <myp_plugin.h>
 #include <print.h>
 
+#define TIME_FORMAT "u:%02u:%2.1f"
+
+#define HOURS(nanosec) (guint) (nanosec / (3600 * GST_SECOND))
+#define MINUTES(nanosec) (guint) ((nanosec / (60 * GST_SECOND)) % 60)
+#define SECONDS(nanosec) ((nanosec / 1000000) % 60000) / 1000.0
+#define TIME_ARGS(nanosec) HOURS(nanosec), MINUTES(nanosec), SECONDS(nanosec)
+
 static char *current_uri;
 static GstElement *pipeline;
 static GstBus *bus;
@@ -261,8 +268,8 @@ static void discovered_cb(GstDiscoverer *discoverer, GstDiscovererInfo *info,
 
   gst_discoverer_stream_info_unref(sinfo);
 
-  printl("Duration: %" GST_TIME_FORMAT "",
-  	  GST_TIME_ARGS(gst_discoverer_info_get_duration(info)));
+  printl("Duration: %" TIME_FORMAT "",
+  	  TIME_ARGS(gst_discoverer_info_get_duration(info)));
 
 }
 
