@@ -34,3 +34,5 @@ Faire des “binding” à la emacs : toute action est effectuée par une foncti
 ⋅ Pouvoir passer des «caps» au cas où le flux ne donne pas d'infos
 
 ⋅ Voir SMPTE.
+
+⋅ Désactiver le screensaver
