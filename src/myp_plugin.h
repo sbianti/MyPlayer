@@ -22,6 +22,8 @@
 #ifndef MYP_PLUGIN_H
 #define MYP_PLUGIN_H
 
+#define PROP_TIMELINE_VISIBLE "timeline-visible"
+
 enum myp_plugin_status_t {
   STATUS_NULL,
   STATUS_PAUSED,

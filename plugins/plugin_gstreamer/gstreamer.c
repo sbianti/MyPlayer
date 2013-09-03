@@ -56,7 +56,6 @@ static GstElement *video_sink;
 static GstElement *audio_sink;
 static int stream_type;
 
-#define TIMELINE_VISIBLE "timeline-visible"
 struct {
   gboolean timeline_visible;
 } prop;
@@ -557,7 +556,7 @@ static gboolean myp_set_prop(const char *name, gboolean activate)
 {
   gboolean ret = TRUE;
 
-  if (g_strcmp0(name, TIMELINE_VISIBLE) == 0)
+  if (g_strcmp0(name, PROP_TIMELINE_VISIBLE) == 0)
     prop.timeline_visible = activate;
   else
     ret = FALSE;
