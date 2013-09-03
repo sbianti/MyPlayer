@@ -58,6 +58,7 @@ static int stream_type;
 
 struct {
   gboolean timeline_visible;
+  gboolean fullscreen;
 } prop;
 
 enum {
@@ -79,6 +80,7 @@ static void myp_gst_init(int argc, char *argv[])
 				major, minor, micro, nano);
 
   prop.timeline_visible = TRUE;
+  prop.fullscreen = FALSE;
 }
 
 static gboolean myp_stop()
@@ -95,6 +97,7 @@ static gboolean myp_stop()
   video_sink = NULL;
   audio_sink = NULL;
   state = GST_STATE_NULL;
+  prop.fullscreen = FALSE;
 
   return TRUE;
 }
@@ -464,7 +467,7 @@ static void pipeline_message_cb(GstBus *bus, GstMessage *msg, void *null_data)
   }
 }
 
-static gboolean myp_play(gdouble speed)
+static gboolean myp_play(gdouble speed, gboolean fullscreen)
 {
   GError *err = NULL;
   char *pipeline_str;
@@ -486,6 +489,7 @@ static gboolean myp_play(gdouble speed)
   g_free(pipeline_str);
 
   current_speed = speed;
+  prop.fullscreen = fullscreen;
 
   if (gst_element_set_state(pipeline, GST_STATE_PLAYING) ==
       GST_STATE_CHANGE_FAILURE) {

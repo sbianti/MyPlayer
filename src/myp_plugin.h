@@ -34,7 +34,7 @@ struct __myp_plugin_t__ {
   void (*init)(int argc, char *argv[]);
   void (*quit)();
   gboolean (*seturi)(char *uri);
-  gboolean (*play)(gdouble speed);
+  gboolean (*play)(gdouble speed, gboolean fullscreen);
   gboolean (*play_pause)();
   gboolean (*stop)();
   gboolean (*seek)(gint64 seek);

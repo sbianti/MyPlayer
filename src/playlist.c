@@ -33,6 +33,7 @@ myp_playlist_t myp_plst_parse_cmdline(int argc, char **argv)
   playlist->current = NULL;
   playlist->loop = 0;
   playlist->random = FALSE;
+  playlist->fullscreen = FALSE;
 
   for (argc--; argc > 0; argc--)
     playlist->list = g_list_prepend(playlist->list, argv[argc]);
@@ -60,7 +61,7 @@ gboolean myp_plst_play(myp_playlist_t playlist, myp_plugin_t myp_plugin)
       return FALSE;
   }
 
-  return myp_plugin->play(1.0);
+  return myp_plugin->play(1.0, playlist->fullscreen);
 }
 
 gboolean myp_plst_stop(myp_playlist_t playlist, myp_plugin_t myp_plugin)
@@ -125,7 +126,7 @@ gboolean prv_next_or_pred(myp_playlist_t playlist, myp_plugin_t myp_plugin,
   if (prv_set_uri(myp_plugin, (char *)(playlist->current->data)) == FALSE)
     return FALSE;
 
-  myp_plugin->play(1.0);
+  myp_plugin->play(1.0, playlist->fullscreen);
 
   return TRUE;
 }
@@ -163,4 +164,15 @@ gboolean myp_plst_set_random(myp_playlist_t playlist, gboolean random)
 gboolean myp_plst_get_random(myp_playlist_t playlist)
 {
   return playlist->random;
+}
+
+gboolean myp_plst_set_fullscreen(myp_playlist_t playlist, gboolean val)
+{
+  playlist->fullscreen = val;
+  return TRUE;
+}
+
+gboolean myp_plst_get_fullscreen(myp_playlist_t playlist)
+{
+  return playlist->fullscreen;
 }

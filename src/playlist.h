@@ -31,6 +31,7 @@ struct __myp_playlist_t__ { /* la rendre opaque */
   GList *current;
   int loop;
   gboolean random;
+  gboolean fullscreen;
 };
 
 typedef struct __myp_playlist_t__* myp_playlist_t;
@@ -48,5 +49,7 @@ gboolean myp_plst_set_loop(myp_playlist_t playlist, int loop);
 int myp_plst_get_loop(myp_playlist_t playlist);
 gboolean myp_plst_set_random(myp_playlist_t playlist, gboolean random);
 gboolean myp_plst_get_random(myp_playlist_t playlist);
+gboolean myp_plst_set_fullscreen(myp_playlist_t playlist, gboolean val);
+gboolean myp_plst_get_fullscreen(myp_playlist_t playlist);
 
 #endif /* PLAYLIST_H */
