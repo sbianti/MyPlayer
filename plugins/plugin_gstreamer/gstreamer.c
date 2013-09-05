@@ -25,6 +25,14 @@
 
 #include <gst/gst.h>
 #include <gst/pbutils/pbutils.h>
+#include <gst/video/gstvideosink.h>
+#include <gst/video/videooverlay.h>
+
+#include <gtk/gtk.h>
+#include <gdk/gdk.h>
+#if defined (GDK_WINDOWING_X11)
+#include <gdk/gdkx.h>
+#endif
 
 #include <stdio.h>
 
@@ -52,9 +60,12 @@ static gboolean current_stream_is_seekable;
 static gint64 current_duration;
 static gdouble current_speed;
 static gboolean stream_initiated;
+static GtkWidget *video_window;
 static GstElement *video_sink;
 static GstElement *audio_sink;
 static int stream_type;
+static gint native_height;
+static gint native_width;
 
 struct {
   gboolean timeline_visible;
@@ -74,6 +85,8 @@ static void myp_gst_init(int argc, char *argv[])
   guint major, minor, micro, nano;
 
   gst_init(&argc, &argv);
+  gtk_init(&argc, &argv);
+
   gst_version(&major, &minor, &micro, &nano);
   plugin_info = g_strdup_printf("Plugin GStreamer for Myplayer based on "
 				"GStreamer-%d.%d.%d.%d",
@@ -81,6 +94,7 @@ static void myp_gst_init(int argc, char *argv[])
 
   prop.timeline_visible = TRUE;
   prop.fullscreen = FALSE;
+  video_window = NULL;
 }
 
 static gboolean myp_stop()
@@ -98,6 +112,11 @@ static gboolean myp_stop()
   audio_sink = NULL;
   state = GST_STATE_NULL;
   prop.fullscreen = FALSE;
+
+  if (video_window) {
+    gtk_widget_destroy(video_window);
+    video_window = NULL;
+  }
 
   return TRUE;
 }
@@ -396,6 +415,79 @@ static gboolean prv_refresh_ui(void *null_data)
   return TRUE;
 }
 
+static gboolean prv_toggle_fullscreen()
+{
+  prop.fullscreen = !prop.fullscreen;
+  printl("%s", prop.fullscreen ? "Fullscreen":"Native Definition");
+  if (prop.fullscreen)
+    gtk_window_fullscreen(GTK_WINDOW(video_window));
+  else
+    gtk_window_unfullscreen(GTK_WINDOW(video_window));
+}
+
+static void realize_cb(GtkWidget *widget, void *null_data)
+{
+  guintptr window_handle;
+  GdkWindow *window = gtk_widget_get_window(widget);
+
+  if (!gdk_window_ensure_native(window))
+    printerrl("Couldn't create native window needed for GstVideoOverlay!");
+
+#if defined (GDK_WINDOWING_X11)
+  window_handle = GDK_WINDOW_XID(window);
+#endif
+
+  gst_video_overlay_set_window_handle(GST_VIDEO_OVERLAY(pipeline),
+				      window_handle);
+}
+
+static gboolean draw_cb(GtkWidget *widget, GdkEventExpose *event,
+			void *null_data)
+{
+  GtkAllocation allocation;
+  GdkWindow *window;
+  cairo_t *cr;
+
+  if (state > GST_STATE_READY)
+    return FALSE;
+
+  window = gtk_widget_get_window(widget);
+
+  gtk_widget_get_allocation(widget, &allocation);
+
+  cr = gdk_cairo_create(window);
+
+  cairo_set_source_rgb(cr, 0, 0, 0);
+
+  cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
+
+  cairo_fill(cr);
+
+  cairo_destroy(cr);
+
+  return FALSE;
+}
+
+static void create_window()
+{
+  GtkWidget *inner_window = gtk_drawing_area_new();
+
+  video_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+
+  gtk_widget_set_double_buffered(inner_window, FALSE);
+
+  g_signal_connect(inner_window, "realize", G_CALLBACK(realize_cb), NULL);
+#if GTK_MAJOR_VERSION == 2
+  g_signal_connect(inner_window, "expose_event", G_CALLBACK(draw_cb), NULL);
+#else
+  g_signal_connect(inner_window, "draw", G_CALLBACK(draw_cb), NULL);
+#endif
+
+  gtk_container_add(GTK_CONTAINER(video_window), inner_window);
+
+  gtk_widget_show_all(video_window);
+}
+
 static void prv_init_stream_attributes()
 {
   GstQuery *query = gst_query_new_seeking(GST_FORMAT_TIME);
@@ -421,14 +513,29 @@ static void prv_init_stream_attributes()
   g_object_get(pipeline, "video-sink", &video_sink, NULL);
   g_object_get(pipeline, "audio-sink", &audio_sink, NULL);
 
-  if (GST_IS_ELEMENT(video_sink))
+  if (GST_IS_ELEMENT(video_sink)) {
     stream_type = CONTAINS_VIDEO;
 
-  if (GST_IS_ELEMENT(audio_sink))
+    printl("video sink: %s", GST_OBJECT_NAME(video_sink));
+
+    native_height = GST_VIDEO_SINK_HEIGHT(video_sink);
+    native_width = GST_VIDEO_SINK_WIDTH(video_sink);
+
+    printl("definition is %d×%d", native_width, native_height);
+
+    gtk_widget_set_size_request(video_window, native_width, native_height);
+  }
+
+  if (GST_IS_ELEMENT(audio_sink)) {
     stream_type += CONTAINS_AUDIO;
+    printl("audio sink: %s", GST_OBJECT_NAME(audio_sink));
+  }
 
   if (prop.timeline_visible)
     g_timeout_add(100, (GSourceFunc)prv_refresh_ui, NULL);
+
+  if (prop.fullscreen)
+    gtk_window_fullscreen(GTK_WINDOW(video_window));
 
   stream_initiated = TRUE;
 }
@@ -472,7 +579,7 @@ static gboolean myp_play(gdouble speed, gboolean fullscreen)
   GError *err = NULL;
   char *pipeline_str;
 
-  if (state == GST_STATE_PLAYING)
+  if (state > GST_STATE_READY)
     myp_stop();
 
   printl("playing %s\n", current_uri);
@@ -503,6 +610,8 @@ static gboolean myp_play(gdouble speed, gboolean fullscreen)
 
   gst_bus_add_signal_watch(bus);
   g_signal_connect(bus, "message", G_CALLBACK(pipeline_message_cb), NULL);
+
+  create_window();
 
   return TRUE;
 }
@@ -614,6 +723,7 @@ myp_plugin_t prepare_plugin()
   gst_plugin->set_speed = myp_set_speed;
   gst_plugin->step = myp_step;
   gst_plugin->set_prop = myp_set_prop;
+  gst_plugin->toggle_fullscreen = prv_toggle_fullscreen;
   gst_plugin->status = myp_status;
   gst_plugin->plugin_name = myp_plugin_name;
   gst_plugin->plugin_version = myp_plugin_version;

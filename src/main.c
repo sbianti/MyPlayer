@@ -258,7 +258,7 @@ static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
     myp_plst_pred(ctx->playlist, ctx->myp_plugin);
     break;
   case 'f':
-    printl("Full screen !");
+    ctx->myp_plugin->toggle_fullscreen();
     break;
   case 'o':
     printl("toggle OSD");

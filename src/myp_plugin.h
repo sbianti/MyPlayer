@@ -42,6 +42,7 @@ struct __myp_plugin_t__ {
   gboolean (*set_speed)(gboolean relative, gdouble val);
   gboolean (*step)(int n_frame);
   gboolean (*set_prop)(const char *name, gboolean activate);
+  gboolean (*toggle_fullscreen)();
   enum myp_plugin_status_t (*status)();
 
   const char *(*plugin_name)();
