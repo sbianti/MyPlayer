@@ -171,11 +171,6 @@ static gboolean myp_seturi(char *uri)
   return FALSE;
 }
 
-static void finished_cb(GstDiscoverer *discoverer, void *null_data) {
-  printl("¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯");
-  gst_discoverer_stop(discoverer);
-}
-
 static void prv_print_tag_foreach(const GstTagList *tags, const gchar *tag,
 				  gpointer user_data) {
   GValue val = { 0, };
@@ -319,19 +314,18 @@ static void discovered_cb(GstDiscoverer *discoverer, GstDiscovererInfo *info,
 static gboolean prv_discover(char *uri, GError **err)
 {
   GstDiscoverer *discoverer = gst_discoverer_new(5*GST_SECOND, err);
+  GstDiscovererInfo *info;
 
   if (discoverer == NULL)
     return FALSE;
 
-  g_signal_connect(discoverer, "discovered", G_CALLBACK(discovered_cb), NULL);
-  g_signal_connect(discoverer, "finished", G_CALLBACK(finished_cb), NULL);
-
-  gst_discoverer_start(discoverer);
-
-  if (gst_discoverer_discover_uri_async(discoverer, uri) == FALSE) {
+  info = gst_discoverer_discover_uri(discoverer, uri, NULL);
+  if (info == FALSE) {
     printerrl("Failed to start discovering URI '%s'", uri);
     return FALSE;
   }
+
+  discovered_cb(discoverer, info, NULL, NULL);
 
   return TRUE;
 }
