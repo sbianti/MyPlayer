@@ -63,7 +63,6 @@ static gboolean stream_initiated;
 static GtkWidget *video_window;
 static GstElement *video_sink;
 static GstElement *audio_sink;
-static int stream_type;
 static gint native_height;
 static gint native_width;
 
@@ -75,7 +74,7 @@ struct {
 enum {
   CONTAINS_VIDEO = 0x1,
   CONTAINS_AUDIO = 0x2
-};
+} stream_type;
 
 #define PLUGIN_NAME "MypGStreamer"
 #define MYP_GST_VERSION "0.0.1"
@@ -94,6 +93,7 @@ static void myp_gst_init(int argc, char *argv[])
 
   prop.timeline_visible = TRUE;
   prop.fullscreen = FALSE;
+  stream_type = 0;
   video_window = NULL;
 }
 
@@ -112,6 +112,7 @@ static gboolean myp_stop()
   audio_sink = NULL;
   state = GST_STATE_NULL;
   prop.fullscreen = FALSE;
+  stream_type = 0;
 
   if (video_window) {
     gtk_widget_destroy(video_window);
@@ -208,6 +209,10 @@ static void prv_print_stream_info(GstDiscovererStreamInfo *info, gint depth) {
   printl("%*s%s: %s", 2 * depth, " ",
 	 gst_discoverer_stream_info_get_stream_type_nick(info),
 	 (desc ? desc : ""));
+
+  if (g_strcmp0(gst_discoverer_stream_info_get_stream_type_nick(info),
+		"video") == 0)
+    stream_type |= CONTAINS_VIDEO;
 
   if (desc) {
     g_free(desc);
@@ -508,7 +513,7 @@ static void prv_init_stream_attributes()
   g_object_get(pipeline, "audio-sink", &audio_sink, NULL);
 
   if (GST_IS_ELEMENT(video_sink)) {
-    stream_type = CONTAINS_VIDEO;
+    stream_type |= CONTAINS_VIDEO;
 
     printl("video sink: %s", GST_OBJECT_NAME(video_sink));
 
@@ -521,7 +526,7 @@ static void prv_init_stream_attributes()
   }
 
   if (GST_IS_ELEMENT(audio_sink)) {
-    stream_type += CONTAINS_AUDIO;
+    stream_type |= CONTAINS_AUDIO;
     printl("audio sink: %s", GST_OBJECT_NAME(audio_sink));
   }
 
@@ -605,7 +610,8 @@ static gboolean myp_play(gdouble speed, gboolean fullscreen)
   gst_bus_add_signal_watch(bus);
   g_signal_connect(bus, "message", G_CALLBACK(pipeline_message_cb), NULL);
 
-  create_window();
+  if (stream_type & CONTAINS_VIDEO)
+    create_window();
 
   return TRUE;
 }
