@@ -605,11 +605,9 @@ static gboolean myp_play(gdouble speed, gboolean fullscreen)
   char *pipeline_str;
 
   if (state > GST_STATE_READY)
-    myp_stop();
+    return FALSE;
 
   printl("playing %s\n", current_uri);
-  if (my_discover() == FALSE)
-    printerrl("Error discovering uri %s:\n", current_uri);
 
   pipeline_str = g_strdup_printf("playbin uri=%s", current_uri);
 
@@ -734,6 +732,8 @@ myp_plugin_t prepare_plugin()
 
   gst_plugin->set_prop = myp_set_prop;
   gst_plugin->toggle_fullscreen = prv_toggle_fullscreen;
+  gst_plugin->discover = my_discover;
+
   gst_plugin->state = myp_state;
 
   gst_plugin->plugin_name = myp_plugin_name;

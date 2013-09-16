@@ -54,8 +54,15 @@ static gboolean prv_set_uri(myp_plugin_t myp_plugin, char *uri)
 
 static gboolean prv_play(myp_playlist_t playlist, myp_plugin_t myp_plugin)
 {
+  myp_plugin->stop();
+
   if (prv_set_uri(myp_plugin, CURRENT_URI) == FALSE) {
     printerrl("Set URI <%> failed", CURRENT_URI);
+    return FALSE;
+  }
+
+  if (myp_plugin->discover() == FALSE) {
+    printerrl("Failed to discover URI '%s'", CURRENT_URI);
     return FALSE;
   }
 
