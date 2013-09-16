@@ -304,7 +304,6 @@ int main(int argc, char *argv[])
   struct sigaction sa;
   GError *error = NULL;
   GIOChannel *io_stdin;
-  myp_plugin_t my_plugin;
   GOptionContext *context;
 
   GOptionEntry options[] = {
@@ -368,9 +367,7 @@ int main(int argc, char *argv[])
 
   g_io_add_watch(io_stdin, G_IO_IN, (GIOFunc)handle_keyboard, ctx);
 
-  my_plugin = prepare_plugin();
-
-  myp_set_myp_plugin(ctx, my_plugin);
+  ctx->myp_plugin = prepare_plugin();
 
   ctx->myp_plugin->init(argc, argv);
 

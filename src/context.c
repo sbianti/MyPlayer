@@ -25,9 +25,3 @@ myp_context_t myp_context_new()
 {
   return g_try_new(struct __myp_context_t__, 1);
 }
-
-gboolean myp_set_myp_plugin(myp_context_t context, myp_plugin_t myp_plugin)
-{
-  context->myp_plugin = myp_plugin;
-}
-

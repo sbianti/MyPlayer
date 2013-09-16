@@ -39,5 +39,4 @@ typedef struct __myp_context_t__* myp_context_t;
 
 myp_context_t myp_context_new();
 
-gboolean myp_set_myp_plugin(myp_context_t context, myp_plugin_t myp_plugin);
 #endif /* CONTEXT_H */
