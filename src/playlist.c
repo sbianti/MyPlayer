@@ -22,6 +22,8 @@
 #include "playlist.h"
 #include "print.h"
 
+#define CURRENT_URI (char *)(playlist->current->data)
+
 myp_playlist_t myp_plst_parse_cmdline(int argc, char **argv)
 {
   myp_playlist_t playlist = g_try_new(struct __myp_playlist_t__, 1);
@@ -50,18 +52,25 @@ static gboolean prv_set_uri(myp_plugin_t myp_plugin, char *uri)
   return FALSE;
 }
 
+static gboolean prv_play(myp_playlist_t playlist, myp_plugin_t myp_plugin)
+{
+  if (prv_set_uri(myp_plugin, CURRENT_URI) == FALSE) {
+    printerrl("Set URI <%> failed", CURRENT_URI);
+    return FALSE;
+  }
+
+  return myp_plugin->play(1.0, playlist->fullscreen);
+}
+
 gboolean myp_plst_play(myp_playlist_t playlist, myp_plugin_t myp_plugin)
 {
   if (myp_plst_is_empty(playlist))
     return FALSE;
 
-  if (playlist->current == NULL) {
+  if (playlist->current == NULL)
     playlist->current = playlist->list;
-    if (prv_set_uri(myp_plugin, (char *)(playlist->current->data)) == FALSE)
-      return FALSE;
-  }
 
-  return myp_plugin->play(1.0, playlist->fullscreen);
+  return prv_play(playlist, myp_plugin);
 }
 
 gboolean myp_plst_stop(myp_playlist_t playlist, myp_plugin_t myp_plugin)
@@ -123,12 +132,8 @@ gboolean prv_next_or_pred(myp_playlist_t playlist, myp_plugin_t myp_plugin,
   }
 
   end:
-  if (prv_set_uri(myp_plugin, (char *)(playlist->current->data)) == FALSE)
-    return FALSE;
 
-  myp_plugin->play(1.0, playlist->fullscreen);
-
-  return TRUE;
+  return prv_play(playlist, myp_plugin);
 }
 
 gboolean myp_plst_next(myp_playlist_t playlist, myp_plugin_t myp_plugin)
