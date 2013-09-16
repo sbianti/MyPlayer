@@ -258,8 +258,9 @@ static void prv_print_topology(GstDiscovererStreamInfo *info, gint depth) {
   }
 }
 
-static void discovered_cb(GstDiscoverer *discoverer, GstDiscovererInfo *info,
-			  GError *err, void *null_data) {
+static gboolean parse_discovery(GstDiscoverer *discoverer,
+				GstDiscovererInfo *info)
+{
   GstDiscovererResult result;
   const gchar *uri;
   const GstTagList *tags;
@@ -272,7 +273,7 @@ static void discovered_cb(GstDiscoverer *discoverer, GstDiscovererInfo *info,
     printerrl("Invalid URI '%s'", uri);
     break;
   case GST_DISCOVERER_ERROR:
-    printerrl("Discoverer error: %s", err->message);
+    printerrl("Discoverer error");
     break;
   case GST_DISCOVERER_TIMEOUT:
     printerrl("Timeout");
@@ -294,7 +295,7 @@ static void discovered_cb(GstDiscoverer *discoverer, GstDiscovererInfo *info,
 
   if (result != GST_DISCOVERER_OK) {
     printerrl("<%s> cannot be played", uri);
-    return;
+    return FALSE;
   }
 
   tags = gst_discoverer_info_get_tags(info);
@@ -308,7 +309,7 @@ static void discovered_cb(GstDiscoverer *discoverer, GstDiscovererInfo *info,
 
   sinfo = gst_discoverer_info_get_stream_info(info);
   if (!sinfo)
-    return;
+    return TRUE;
 
   printl("Stream information:");
   prv_print_topology(sinfo, 0);
@@ -318,25 +319,31 @@ static void discovered_cb(GstDiscoverer *discoverer, GstDiscovererInfo *info,
   printl("Duration: %" TIME_FORMAT "",
   	  TIME_ARGS(gst_discoverer_info_get_duration(info)));
 
+  return TRUE;
 }
 
-static gboolean prv_discover(char *uri, GError **err)
+static gboolean my_discover()
 {
-  GstDiscoverer *discoverer = gst_discoverer_new(5*GST_SECOND, err);
+  GstDiscoverer *discoverer;
   GstDiscovererInfo *info;
+  GError *err = NULL;
 
-  if (discoverer == NULL)
-    return FALSE;
-
-  info = gst_discoverer_discover_uri(discoverer, uri, NULL);
-  if (info == FALSE) {
-    printerrl("Failed to start discovering URI '%s'", uri);
+  discoverer = gst_discoverer_new(5*GST_SECOND, &err);
+  if (discoverer == NULL) {
+    g_error_free(err);
     return FALSE;
   }
 
-  discovered_cb(discoverer, info, NULL, NULL);
+  if (current_uri == NULL) {
+    printerrl("No URI set");
+    return FALSE;
+  }
 
-  return TRUE;
+  info = gst_discoverer_discover_uri(discoverer, current_uri, NULL);
+  if (info == NULL)
+    return FALSE;
+
+  return parse_discovery(discoverer, info);
 }
 
 static gboolean myp_set_speed(gboolean relative, gdouble val)
@@ -579,17 +586,14 @@ static void pipeline_message_cb(GstBus *bus, GstMessage *msg, void *null_data)
 
 static gboolean myp_play(gdouble speed, gboolean fullscreen)
 {
-  GError *err = NULL;
   char *pipeline_str;
 
   if (state > GST_STATE_READY)
     myp_stop();
 
   printl("playing %s\n", current_uri);
-  if (prv_discover(current_uri, &err) == FALSE) {
-    printerrl("Error discovering uri %s:\n%s", current_uri, err->message);
-    g_clear_error(&err);
-  }
+  if (my_discover() == FALSE)
+    printerrl("Error discovering uri %s:\n", current_uri);
 
   pipeline_str = g_strdup_printf("playbin uri=%s", current_uri);
 
