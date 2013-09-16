@@ -44,6 +44,19 @@
 #include "playlist.h"
 #include "context.h"
 
+#define CNTRL_R 65508
+#define CNTRL_L 65507
+#define LEFT_KEYVAL 65361
+#define RIGHT_KEYVAL 65363
+#define PAGE_UP_KEYVAL 65365
+#define PAGE_DOWN_KEYVAL 65366
+#define UP_KEYVAL 65362
+#define DOWN_KEYVAL 65364
+#define HOME_KEYVAL 65360
+#define END_KEYVAL 65367
+#define ENTER_KEYVAL 65293
+#define BACKSPACE_KEYVAL 65288
+
 static volatile sig_atomic_t terminated = 0;
 static myp_status_t status = SUCCESS;
 static myp_context_t ctx;
@@ -210,6 +223,92 @@ static gboolean prv_exec_command_last_char_special_sequence(char car,
   return ret;
 }
 
+static gboolean handle_keypressed(guint key, char *key_name)
+{
+  static gboolean cntrl = FALSE;
+
+  if (cntrl) {
+    if (key == 'x')
+      printl("^x");
+
+    cntrl = FALSE;
+    return TRUE;
+  }
+
+  switch (key) {
+  case CNTRL_L:
+  case CNTRL_R:
+    cntrl = TRUE;
+    break;
+  case LEFT_KEYVAL:
+    ctx->myp_plugin->seek(-10);
+    break;
+  case RIGHT_KEYVAL:
+    ctx->myp_plugin->seek(10);
+    break;
+  case PAGE_UP_KEYVAL:
+    ctx->myp_plugin->seek(600);
+    break;
+  case PAGE_DOWN_KEYVAL:
+    ctx->myp_plugin->seek(-600);
+    break;
+  case UP_KEYVAL:
+    ctx->myp_plugin->seek(60);
+    break;
+  case DOWN_KEYVAL:
+    ctx->myp_plugin->seek(-60);
+    break;
+  case HOME_KEYVAL:
+    ctx->myp_plugin->set_pos(0);
+    break;
+  case END_KEYVAL:
+    ctx->myp_plugin->set_pos(-1);
+    break;
+  case 'q':
+    g_main_loop_quit(ctx->process_loop);
+    break;
+  case ENTER_KEYVAL:
+  case '>':
+    myp_plst_next(ctx->playlist, ctx->myp_plugin, ctx->myp_ui);
+    break;
+  case '<':
+    myp_plst_pred(ctx->playlist, ctx->myp_plugin, ctx->myp_ui);
+    break;
+  case 'f':
+    ctx->myp_ui->toggle_fullscreen();
+    break;
+  case 'o':
+    printl("toggle OSD");
+    break;
+  case 'p':
+  case ' ':
+    ctx->myp_plugin->play_pause();
+    break;
+  case '{':
+    ctx->myp_plugin->set_speed(TRUE, 0.5);
+    break;
+  case '}':
+    ctx->myp_plugin->set_speed(TRUE, 2.0);
+    break;
+  case '[':
+    ctx->myp_plugin->set_speed(TRUE, 0.9);
+    break;
+  case ']':
+    ctx->myp_plugin->set_speed(TRUE, 1.1);
+    break;
+  case BACKSPACE_KEYVAL:
+    ctx->myp_plugin->set_speed(FALSE, 1.0);
+    break;
+  case '.':
+    ctx->myp_plugin->step(1);
+    break;
+  default:
+      printl("No bind found for key: %s (%d)", key_name, key);
+  }
+
+  return TRUE;
+}
+
 static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
 				myp_context_t ctx)
 {
@@ -252,13 +351,13 @@ static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
     break;
   case '\n':
   case '>':
-    myp_plst_next(ctx->playlist, ctx->myp_plugin);
+    myp_plst_next(ctx->playlist, ctx->myp_plugin, ctx->myp_ui);
     break;
   case '<':
-    myp_plst_pred(ctx->playlist, ctx->myp_plugin);
+    myp_plst_pred(ctx->playlist, ctx->myp_plugin, ctx->myp_ui);
     break;
   case 'f':
-    ctx->myp_plugin->toggle_fullscreen();
+    ctx->myp_ui->toggle_fullscreen();
     break;
   case 'o':
     printl("toggle OSD");
@@ -368,24 +467,34 @@ int main(int argc, char *argv[])
   g_io_add_watch(io_stdin, G_IO_IN, (GIOFunc)handle_keyboard, ctx);
 
   ctx->myp_plugin = prepare_plugin();
+  ctx->myp_ui = prepare_ui();
 
   ctx->myp_plugin->init(argc, argv);
+  ctx->myp_ui->init(argc, argv, handle_keypressed);
 
-  printl("We are using %s version %s\n with more infos:%s",
+  ctx->myp_plugin->set_ui_plugin(ctx->myp_ui);
+  ctx->myp_ui->set_window_handler(ctx->myp_plugin->window_handler);
+
+  printl("We are using %s version %s\n with more infos:%s"
+	 "\n             %s version %s\n with more infos:%s",
 	 ctx->myp_plugin->plugin_name(),
 	 ctx->myp_plugin->plugin_version(),
-	 ctx->myp_plugin->plugin_info());
+	 ctx->myp_plugin->plugin_info(),
+	 ctx->myp_ui->ui_name(),
+	 ctx->myp_ui->ui_version(),
+	 ctx->myp_ui->ui_info());
 
   if (option_hide_timeline)
     ctx->myp_plugin->set_prop("timeline-visible", FALSE);
   if (option_fullscreen)
     myp_plst_set_fullscreen(ctx->playlist, TRUE);
 
-  myp_plst_play(ctx->playlist, ctx->myp_plugin);
+  myp_plst_play(ctx->playlist, ctx->myp_plugin, ctx->myp_ui);
   ctx->process_loop = g_main_loop_new(NULL, FALSE);
   g_main_loop_run(ctx->process_loop);
 
   ctx->myp_plugin->quit();
+  ctx->myp_ui->quit();
 
   printl("Exiting… (Quit)");
 

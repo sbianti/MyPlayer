@@ -22,19 +22,16 @@
 #ifndef MYP_PLUGIN_H
 #define MYP_PLUGIN_H
 
-#define PROP_TIMELINE_VISIBLE "timeline-visible"
+#include "common.h"
+#include "myp_ui.h"
 
-enum myp_plugin_state_t {
-  STATE_NULL,
-  STATE_PAUSED,
-  STATE_PLAYING
-};
+#define PROP_TIMELINE_VISIBLE "timeline-visible"
 
 struct __myp_plugin_t__ {
   void (*init)(int argc, char *argv[]);
   void (*quit)();
   gboolean (*seturi)(char *uri);
-  gboolean (*play)(gdouble speed, gboolean fullscreen);
+  gboolean (*play)(gdouble speed);
   gboolean (*play_pause)();
   gboolean (*stop)();
   gboolean (*seek)(gint64 seek);
@@ -42,8 +39,9 @@ struct __myp_plugin_t__ {
   gboolean (*set_speed)(gboolean relative, gdouble val);
   gboolean (*step)(int n_frame);
   gboolean (*set_prop)(const char *name, gboolean activate);
-  gboolean (*toggle_fullscreen)();
   gboolean (*discover)();
+  void (*window_handler)(guintptr window_handle);
+  void (*set_ui_plugin)(myp_ui_t myp_ui);
 
   enum myp_plugin_state_t (*state)();
 
@@ -58,4 +56,4 @@ typedef struct __myp_plugin_t__* myp_plugin_t;
 
 myp_plugin_t prepare_plugin();
 
-#endif
+#endif /* MYP_PLUGIN_H */

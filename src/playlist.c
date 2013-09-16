@@ -52,8 +52,11 @@ static gboolean prv_set_uri(myp_plugin_t myp_plugin, char *uri)
   return FALSE;
 }
 
-static gboolean prv_play(myp_playlist_t playlist, myp_plugin_t myp_plugin)
+static gboolean prv_play(myp_playlist_t playlist,
+			 myp_plugin_t myp_plugin, myp_ui_t myp_ui)
 {
+  gboolean ret;
+
   myp_plugin->stop();
 
   if (prv_set_uri(myp_plugin, CURRENT_URI) == FALSE) {
@@ -66,10 +69,16 @@ static gboolean prv_play(myp_playlist_t playlist, myp_plugin_t myp_plugin)
     return FALSE;
   }
 
-  return myp_plugin->play(1.0, playlist->fullscreen);
+  ret = myp_plugin->play(1.0);
+
+  if (myp_ui && playlist->fullscreen)
+    myp_ui->toggle_fullscreen();
+
+  return ret;
 }
 
-gboolean myp_plst_play(myp_playlist_t playlist, myp_plugin_t myp_plugin)
+gboolean myp_plst_play(myp_playlist_t playlist,
+		       myp_plugin_t myp_plugin, myp_ui_t myp_ui)
 {
   if (myp_plst_is_empty(playlist))
     return FALSE;
@@ -77,7 +86,7 @@ gboolean myp_plst_play(myp_playlist_t playlist, myp_plugin_t myp_plugin)
   if (playlist->current == NULL)
     playlist->current = playlist->list;
 
-  return prv_play(playlist, myp_plugin);
+  return prv_play(playlist, myp_plugin, myp_ui);
 }
 
 gboolean myp_plst_stop(myp_playlist_t playlist, myp_plugin_t myp_plugin)
@@ -98,7 +107,8 @@ gboolean myp_plst_play_pause(myp_playlist_t playlist, myp_plugin_t myp_plugin)
   return myp_plugin->play_pause();
 }
 
-gboolean prv_next_or_pred(myp_playlist_t playlist, myp_plugin_t myp_plugin,
+gboolean prv_next_or_pred(myp_playlist_t playlist,
+			  myp_plugin_t myp_plugin, myp_ui_t myp_ui,
 			  gboolean next)
 {
   if (myp_plst_is_empty(playlist))
@@ -140,17 +150,19 @@ gboolean prv_next_or_pred(myp_playlist_t playlist, myp_plugin_t myp_plugin,
 
   end:
 
-  return prv_play(playlist, myp_plugin);
+  return prv_play(playlist, myp_plugin, myp_ui);
 }
 
-gboolean myp_plst_next(myp_playlist_t playlist, myp_plugin_t myp_plugin)
+gboolean myp_plst_next(myp_playlist_t playlist,
+		       myp_plugin_t myp_plugin, myp_ui_t myp_ui)
 {
-  return prv_next_or_pred(playlist, myp_plugin, TRUE);
+  return prv_next_or_pred(playlist, myp_plugin, myp_ui, TRUE);
 }
 
-gboolean myp_plst_pred(myp_playlist_t playlist, myp_plugin_t myp_plugin)
+gboolean myp_plst_pred(myp_playlist_t playlist,
+		       myp_plugin_t myp_plugin, myp_ui_t myp_ui)
 {
-  return prv_next_or_pred(playlist, myp_plugin, FALSE);
+  return prv_next_or_pred(playlist, myp_plugin, myp_ui, FALSE);
 }
 
 gboolean myp_plst_is_empty(myp_playlist_t playlist)

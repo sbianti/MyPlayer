@@ -19,26 +19,15 @@
  *
  */
 
-#ifndef CONTEXT_H
-#define CONTEXT_H
+#ifndef MYP_COMMON_H
+#define MYP_COMMON_H
 
-#include <glib.h>
-
-#include "playlist.h"
-#include "myp_plugin.h"
-#include "myp_ui.h"
-
-enum __myp_status_t__ { SUCCESS, EXIT, ERROR };
-typedef enum __myp_status_t__ myp_status_t;
-
-struct __myp_context_t__ {
-  GMainLoop *process_loop;
-  myp_playlist_t playlist;
-  myp_plugin_t myp_plugin;
-  myp_ui_t myp_ui;
+enum myp_plugin_state_t {
+  STATE_NULL,
+  STATE_PAUSED,
+  STATE_PLAYING
 };
-typedef struct __myp_context_t__* myp_context_t;
 
-myp_context_t myp_context_new();
+typedef enum myp_plugin_state_t (*player_state_func)();
 
-#endif /* CONTEXT_H */
+#endif /* MYP_COMMON_H */
