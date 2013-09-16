@@ -584,6 +584,22 @@ static void pipeline_message_cb(GstBus *bus, GstMessage *msg, void *null_data)
   }
 }
 
+static enum myp_plugin_state_t myp_state()
+{
+  switch (state) {
+  case GST_STATE_VOID_PENDING:
+  case GST_STATE_NULL:
+  case GST_STATE_READY:
+    return STATE_NULL;
+
+  case GST_STATE_PAUSED:
+    return STATE_PAUSED;
+
+  case GST_STATE_PLAYING:
+    return STATE_PLAYING;
+  }
+}
+
 static gboolean myp_play(gdouble speed, gboolean fullscreen)
 {
   char *pipeline_str;
@@ -685,22 +701,6 @@ static gboolean myp_set_prop(const char *name, gboolean activate)
   return ret;
 }
 
-static enum myp_plugin_status_t myp_status()
-{
-  switch (state) {
-  case GST_STATE_VOID_PENDING:
-  case GST_STATE_NULL:
-  case GST_STATE_READY:
-    return STATUS_NULL;
-
-  case GST_STATE_PAUSED:
-    return STATUS_PAUSED;
-
-  case GST_STATE_PLAYING:
-    return STATUS_PLAYING;
-  }
-}
-
 static const char *myp_plugin_name()
 {
   return PLUGIN_NAME;
@@ -734,7 +734,7 @@ myp_plugin_t prepare_plugin()
 
   gst_plugin->set_prop = myp_set_prop;
   gst_plugin->toggle_fullscreen = prv_toggle_fullscreen;
-  gst_plugin->status = myp_status;
+  gst_plugin->state = myp_state;
 
   gst_plugin->plugin_name = myp_plugin_name;
   gst_plugin->plugin_version = myp_plugin_version;

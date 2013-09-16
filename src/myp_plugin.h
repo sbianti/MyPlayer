@@ -24,10 +24,10 @@
 
 #define PROP_TIMELINE_VISIBLE "timeline-visible"
 
-enum myp_plugin_status_t {
-  STATUS_NULL,
-  STATUS_PAUSED,
-  STATUS_PLAYING
+enum myp_plugin_state_t {
+  STATE_NULL,
+  STATE_PAUSED,
+  STATE_PLAYING
 };
 
 struct __myp_plugin_t__ {
@@ -43,7 +43,8 @@ struct __myp_plugin_t__ {
   gboolean (*step)(int n_frame);
   gboolean (*set_prop)(const char *name, gboolean activate);
   gboolean (*toggle_fullscreen)();
-  enum myp_plugin_status_t (*status)();
+
+  enum myp_plugin_state_t (*state)();
 
   const char *(*plugin_name)();
   const char *(*plugin_version)();
