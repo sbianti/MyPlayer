@@ -39,6 +39,9 @@ static char *ui_info;
 static guint window_ready_id;
 static window_handle_setter_t set_window_handle;
 static handle_keypressed_t handle_keypressed;
+static gint motion_signal_id;
+static GdkCursor *blank_cursor;
+static GdkCursor *original_cursor;
 
 static void my_init(int argc, char *argv[], handle_keypressed_t func)
 {
@@ -70,6 +73,15 @@ static void my_quit()
 static gboolean my_close()
 {
   if (top_window) {
+#if GTK_MAJOR_VERSION == 3
+    g_object_unref(blank_cursor);
+    g_object_unref(original_cursor);
+#else
+    gdk_cursor_unref(blank_cursor);
+    gdk_cursor_unref(original_cursor);
+#endif
+    blank_cursor = NULL;
+    original_cursor = NULL;
     gtk_widget_destroy(top_window);
     top_window = NULL;
     fullscreen = FALSE;
@@ -98,6 +110,36 @@ static gboolean keypress_cb(GtkWidget *widget, GdkEventKey *event,
   return TRUE;
 }
 
+static gboolean mouse_motion_cb(GtkWidget *widget, GdkEventMotion *event,
+				GdkWindow *window);
+
+static gboolean hide_mouse_pointer(gpointer window)
+{
+  if (GTK_IS_WINDOW(top_window) == FALSE || GDK_IS_WINDOW(window) == FALSE)
+    return FALSE;
+
+  gdk_window_set_cursor(GDK_WINDOW(window), blank_cursor);
+
+  g_signal_handler_unblock(top_window, motion_signal_id);
+
+  return FALSE;
+}
+
+static gboolean mouse_motion_cb(GtkWidget *widget, GdkEventMotion *event,
+				GdkWindow *window)
+{
+  if (GTK_IS_WINDOW(top_window) == FALSE || GDK_IS_WINDOW(window) == FALSE)
+    return TRUE;
+
+  gdk_window_set_cursor(window, original_cursor);
+
+  g_signal_handler_block(top_window, motion_signal_id);
+
+  g_timeout_add_seconds(2, hide_mouse_pointer, window);
+
+  return TRUE;
+}
+
 static void realize_cb(GtkWidget *widget, void *null_data)
 {
   guintptr window_handle;
@@ -114,6 +156,16 @@ static void realize_cb(GtkWidget *widget, void *null_data)
 
   g_signal_connect(top_window, "key-press-event",
 		   G_CALLBACK(keypress_cb), NULL);
+
+  motion_signal_id = g_signal_connect(top_window, "motion_notify_event",
+				      G_CALLBACK(mouse_motion_cb), window);
+
+  gdk_window_set_events(window, GDK_POINTER_MOTION_MASK);
+
+  blank_cursor = gdk_cursor_new(GDK_BLANK_CURSOR);
+  original_cursor = gdk_cursor_new(GDK_LEFT_PTR);
+
+  gdk_window_set_cursor(window, blank_cursor);
 }
 
 static gboolean draw_cb(GtkWidget *widget, GdkEventExpose *event,
