@@ -155,6 +155,13 @@ static void enter_command_mode()
   printl("Command mode !!");
 }
 
+static void next_or_quit()
+{
+  if (myp_plst_next(ctx->playlist, ctx->myp_plugin, ctx->myp_ui) == FALSE &&
+      option_interactive_mode == FALSE)
+    g_main_loop_quit(ctx->process_loop);
+}
+
 static gboolean prv_exec_command_third_char_special_sequence(char car,
 							     gboolean *next_is,
 							     myp_context_t ctx)
@@ -269,7 +276,7 @@ static gboolean handle_keypressed(guint key, char *key_name)
     break;
   case ENTER_KEYVAL:
   case '>':
-    myp_plst_next(ctx->playlist, ctx->myp_plugin, ctx->myp_ui);
+    next_or_quit();
     break;
   case '<':
     myp_plst_pred(ctx->playlist, ctx->myp_plugin, ctx->myp_ui);
@@ -351,7 +358,7 @@ static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
     break;
   case '\n':
   case '>':
-    myp_plst_next(ctx->playlist, ctx->myp_plugin, ctx->myp_ui);
+    next_or_quit();
     break;
   case '<':
     myp_plst_pred(ctx->playlist, ctx->myp_plugin, ctx->myp_ui);
@@ -469,7 +476,7 @@ int main(int argc, char *argv[])
   ctx->myp_plugin = prepare_plugin();
   ctx->myp_ui = prepare_ui();
 
-  ctx->myp_plugin->init(argc, argv);
+  ctx->myp_plugin->init(argc, argv, next_or_quit);
   ctx->myp_ui->init(argc, argv, handle_keypressed);
 
   ctx->myp_plugin->set_ui_plugin(ctx->myp_ui);

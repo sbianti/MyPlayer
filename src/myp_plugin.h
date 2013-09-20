@@ -27,8 +27,10 @@
 
 #define PROP_TIMELINE_VISIBLE "timeline-visible"
 
+typedef void (*handle_stop_t)();
+
 struct __myp_plugin_t__ {
-  void (*init)(int argc, char *argv[]);
+  void (*init)(int argc, char *argv[], handle_stop_t func);
   void (*quit)();
   gboolean (*seturi)(char *uri);
   gboolean (*play)(gdouble speed);

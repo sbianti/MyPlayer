@@ -59,6 +59,7 @@ static GstElement *audio_sink;
 static gint native_height;
 static gint native_width;
 static myp_ui_t ui_plugin;
+static handle_stop_t handle_stop;
 
 struct {
   gboolean timeline_visible;
@@ -72,7 +73,7 @@ enum {
 #define PLUGIN_NAME "MypGStreamer"
 #define MYP_GST_VERSION "0.0.1"
 
-static void myp_gst_init(int argc, char *argv[])
+static void myp_gst_init(int argc, char *argv[], handle_stop_t func)
 {
   guint major, minor, micro, nano;
 
@@ -86,11 +87,13 @@ static void myp_gst_init(int argc, char *argv[])
   prop.timeline_visible = TRUE;
   ui_plugin = NULL;
   stream_types = 0;
+
+  handle_stop = func;
 }
 
-static gboolean myp_stop()
+static gboolean prv_stop(gboolean local_call)
 {
-  if (GST_IS_ELEMENT(pipeline) == FALSE)
+  if (state < GST_STATE_READY)
     return FALSE;
 
   gst_object_unref(bus);
@@ -107,7 +110,15 @@ static gboolean myp_stop()
   if (ui_plugin)
     ui_plugin->close();
 
+  if (local_call && handle_stop)
+    handle_stop();
+
   return TRUE;
+}
+
+static gboolean myp_stop()
+{
+  return prv_stop(FALSE);
 }
 
 static void myp_gst_quit()
@@ -115,7 +126,7 @@ static void myp_gst_quit()
   printl("\n%s says bye bye!", PLUGIN_NAME);
 
   if (GST_IS_ELEMENT(pipeline))
-    myp_stop();
+    prv_stop(FALSE);
 
   g_free(plugin_info);
 
@@ -476,7 +487,7 @@ static void pipeline_message_cb(GstBus *bus, GstMessage *msg, void *null_data)
     g_free(debug);
 
     gst_element_set_state(pipeline, GST_STATE_READY);
-    myp_stop();
+    prv_stop(TRUE);
     break;
   }
   case GST_MESSAGE_STATE_CHANGED:
@@ -490,7 +501,7 @@ static void pipeline_message_cb(GstBus *bus, GstMessage *msg, void *null_data)
     break;
   case GST_MESSAGE_EOS:
     gst_element_set_state(pipeline, GST_STATE_READY);
-    myp_stop();
+    prv_stop(TRUE);
     break;
   default:
     break;
