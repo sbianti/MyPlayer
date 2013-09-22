@@ -53,6 +53,7 @@ static char *plugin_info;
 static gboolean current_stream_is_seekable;
 static gint64 current_duration;
 static gdouble current_speed;
+static gint current_volume;
 static gboolean stream_initiated;
 static GstElement *video_sink;
 static GstElement *audio_sink;
@@ -60,6 +61,7 @@ static gint native_height;
 static gint native_width;
 static myp_ui_t ui_plugin;
 static handle_stop_t handle_stop;
+static guint ui_volume_src_id;
 
 struct {
   gboolean timeline_visible;
@@ -87,6 +89,7 @@ static void myp_gst_init(int argc, char *argv[], handle_stop_t func)
   prop.timeline_visible = TRUE;
   ui_plugin = NULL;
   stream_types = 0;
+  ui_volume_src_id = 0;
 
   handle_stop = func;
 }
@@ -381,6 +384,65 @@ static gboolean myp_step(int n_frame)
   return TRUE;
 }
 
+static gboolean clean_ui_volume(gpointer null_data)
+{
+  switch (stream_types) {
+  case CONTAINS_AUDIO:
+    print("[23C               \r");
+    break;
+  case CONTAINS_AUDIO | CONTAINS_VIDEO:
+    print("[48C               \r");
+  }
+
+  ui_volume_src_id = 0;
+
+  return FALSE;
+}
+
+static void print_ui_volume()
+{
+  switch (stream_types) {
+  case CONTAINS_AUDIO:
+    print("[23C Volume: %d%% \r", current_volume);
+    break;
+  case CONTAINS_AUDIO | CONTAINS_VIDEO:
+    print("[48C Volume: %d%% \r", current_volume);
+  }
+
+  if (ui_volume_src_id != 0)
+    g_source_remove(ui_volume_src_id);
+
+  ui_volume_src_id = g_timeout_add(2000, (GSourceFunc)clean_ui_volume, NULL);
+}
+
+static gboolean myp_set_soft_volume(gboolean relative, gint val)
+{
+  gboolean ret;
+
+  if (stream_types & CONTAINS_AUDIO == 0)
+    return FALSE;
+
+  if (relative)
+    current_volume = current_volume + val;
+  else
+    current_volume = val;
+
+  if (current_volume < 0) {
+    current_volume = 0;
+    ret = FALSE;
+  } else if (current_volume > 1000) {
+    current_volume = 1000;
+    ret = FALSE;
+  } else
+    ret = TRUE;
+
+  g_object_set(pipeline, "volume", current_volume / 100.0, NULL);  
+
+  print_ui_volume();
+
+  return ret;
+}
+
 static gint64 get_position(GstElement *element)
 {
   gint64 current_pos = 0;
@@ -443,6 +505,8 @@ static void prv_init_stream_attributes()
 
   if (current_speed != 1.0)
     myp_set_speed(FALSE, current_speed);
+
+  current_volume = 100;
 
   stream_types = 0;
 
@@ -663,6 +727,7 @@ myp_plugin_t prepare_plugin()
   gst_plugin->set_pos = myp_set_pos;
   gst_plugin->set_speed = myp_set_speed;
   gst_plugin->step = myp_step;
+  gst_plugin->set_soft_volume = myp_set_soft_volume;
 
   gst_plugin->set_prop = myp_set_prop;
 

@@ -56,6 +56,8 @@
 #define END_KEYVAL 65367
 #define ENTER_KEYVAL 65293
 #define BACKSPACE_KEYVAL 65288
+#define KP_Divide_KEYVAL 65455
+#define KP_Multiply_KEYVAL 65450
 
 static volatile sig_atomic_t terminated = 0;
 static myp_status_t status = SUCCESS;
@@ -310,6 +312,14 @@ static gboolean handle_keypressed(guint key, char *key_name)
   case '.':
     ctx->myp_plugin->step(1);
     break;
+  case KP_Multiply_KEYVAL:
+  case '*':
+    ctx->myp_plugin->set_soft_volume(TRUE, 10);
+    break;
+  case KP_Divide_KEYVAL:
+  case '/':
+    ctx->myp_plugin->set_soft_volume(TRUE, -10);
+    break;
   default:
     if (strlen(key_name) < 2)
       printl("No bind found for key: %s (%d)", key_name, key);
@@ -393,6 +403,12 @@ static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
     break;
   case '.':
     ctx->myp_plugin->step(1);
+    break;
+  case '*':
+    ctx->myp_plugin->set_soft_volume(TRUE, 10);
+    break;
+  case '/':
+    ctx->myp_plugin->set_soft_volume(TRUE, -10);
     break;
   case '':
     echap[0] = TRUE;
