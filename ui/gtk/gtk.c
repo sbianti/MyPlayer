@@ -92,6 +92,9 @@ static gboolean my_close()
 
 static gboolean my_toggle_fullscreen()
 {
+  if (top_window == NULL)
+    return FALSE;
+
   fullscreen = !fullscreen;
 
   if (fullscreen)
