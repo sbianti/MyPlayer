@@ -272,6 +272,7 @@ static gboolean handle_keypressed(guint key, char *key_name)
     ctx->myp_plugin->set_pos(-1);
     break;
   case 'q':
+    myp_plst_stop(ctx->playlist, ctx->myp_plugin);
     g_main_loop_quit(ctx->process_loop);
     break;
   case ENTER_KEYVAL:
@@ -310,6 +311,7 @@ static gboolean handle_keypressed(guint key, char *key_name)
     ctx->myp_plugin->step(1);
     break;
   default:
+    if (strlen(key_name) < 2)
       printl("No bind found for key: %s (%d)", key_name, key);
   }
 
@@ -354,6 +356,7 @@ static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
     enter_command_mode();
     break;
   case 'q':
+    myp_plst_stop(ctx->playlist, ctx->myp_plugin);
     g_main_loop_quit(ctx->process_loop);
     break;
   case '\n':
