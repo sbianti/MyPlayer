@@ -65,7 +65,7 @@ static myp_status_t status = SUCCESS;
 static myp_context_t ctx;
 static gboolean option_quiet = FALSE;
 static gboolean option_version = FALSE;
-static gboolean option_interactive_mode = FALSE;
+static gboolean option_idle = FALSE;
 static int option_loop = 1;
 static gboolean option_random = FALSE;
 static gboolean option_hide_timeline = FALSE;
@@ -161,7 +161,7 @@ static void enter_command_mode()
 static void next_or_quit()
 {
   if (myp_plst_next(ctx->playlist, ctx->myp_plugin, ctx->myp_ui) == FALSE &&
-      option_interactive_mode == FALSE)
+      option_idle == FALSE)
     g_main_loop_quit(ctx->process_loop);
 }
 
@@ -438,7 +438,7 @@ int main(int argc, char *argv[])
       "doesn't print anything on stdout", NULL },
     { "version", 'v', 0, G_OPTION_ARG_NONE, &option_version,
       "print version and bye byes", NULL },
-    { "interactive-mode", 'i', 0, G_OPTION_ARG_NONE, &option_interactive_mode,
+    { "idle-mode", 'i', 0, G_OPTION_ARG_NONE, &option_idle,
       "doesn't quit if playlist is empty or finished", NULL},
     { "loop", 'l', 0, G_OPTION_ARG_INT, &option_loop,
       "number of loop in the this playlist (0 means ∞)", NULL },
@@ -474,7 +474,7 @@ int main(int argc, char *argv[])
   if (ctx->playlist == NULL)
     quit(ERROR, "myp_plst_parse_cmdline failed to create playlist");
 
-  if (myp_plst_is_empty(ctx->playlist) && !option_interactive_mode)
+  if (myp_plst_is_empty(ctx->playlist) && !option_idle)
     quit(ERROR, USAGE);
 
   if (option_loop < 0) {
@@ -517,9 +517,11 @@ int main(int argc, char *argv[])
   if (option_fullscreen)
     myp_plst_set_fullscreen(ctx->playlist, TRUE);
 
-  myp_plst_play(ctx->playlist, ctx->myp_plugin, ctx->myp_ui);
-  ctx->process_loop = g_main_loop_new(NULL, FALSE);
-  g_main_loop_run(ctx->process_loop);
+  if (myp_plst_play(ctx->playlist, ctx->myp_plugin, ctx->myp_ui) ||
+      option_idle) {
+    ctx->process_loop = g_main_loop_new(NULL, FALSE);
+    g_main_loop_run(ctx->process_loop);
+  }
 
   ctx->myp_plugin->quit();
   ctx->myp_ui->quit();
