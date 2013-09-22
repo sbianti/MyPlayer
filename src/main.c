@@ -55,6 +55,7 @@
 #define HOME_KEYVAL 65360
 #define END_KEYVAL 65367
 #define ENTER_KEYVAL 65293
+#define KP_Enter_KEYVAL 65421
 #define BACKSPACE_KEYVAL 65288
 #define KP_Divide_KEYVAL 65455
 #define KP_Multiply_KEYVAL 65450
@@ -277,6 +278,7 @@ static gboolean handle_keypressed(guint key, char *key_name)
     myp_plst_stop(ctx->playlist, ctx->myp_plugin);
     g_main_loop_quit(ctx->process_loop);
     break;
+  case KP_Enter_KEYVAL:
   case ENTER_KEYVAL:
   case '>':
     next_or_quit();
