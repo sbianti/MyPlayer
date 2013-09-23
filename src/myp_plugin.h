@@ -41,6 +41,7 @@ struct __myp_plugin_t__ {
   gboolean (*set_speed)(gboolean relative, gdouble val);
   gboolean (*step)(int n_frame);
   gboolean (*set_soft_volume)(gboolean relative, gint val);
+  gboolean (*toggle_soft_mute)();
   gboolean (*set_prop)(const char *name, gboolean activate);
   gboolean (*discover)();
   void (*window_handler)(guintptr window_handle);

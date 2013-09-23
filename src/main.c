@@ -314,6 +314,9 @@ static gboolean handle_keypressed(guint key, char *key_name)
   case '.':
     ctx->myp_plugin->step(1);
     break;
+  case 'm':
+    ctx->myp_plugin->toggle_soft_mute();
+    break;
   case KP_Multiply_KEYVAL:
   case '*':
     ctx->myp_plugin->set_soft_volume(TRUE, 10);
@@ -402,6 +405,9 @@ static gboolean handle_keyboard(GIOChannel *source, GIOCondition cond,
     break;
   case '':
     ctx->myp_plugin->set_speed(FALSE, 1.0);
+    break;
+  case 'm':
+    ctx->myp_plugin->toggle_soft_mute();
     break;
   case '.':
     ctx->myp_plugin->step(1);

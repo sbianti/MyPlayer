@@ -54,6 +54,7 @@ static gboolean current_stream_is_seekable;
 static gint64 current_duration;
 static gdouble current_speed;
 static gint current_volume;
+static gboolean mute;
 static gboolean stream_initiated;
 static GstElement *video_sink;
 static GstElement *audio_sink;
@@ -388,10 +389,10 @@ static gboolean clean_ui_volume(gpointer null_data)
 {
   switch (stream_types) {
   case CONTAINS_AUDIO:
-    print("[23C               \r");
+    print("[23C                     \r");
     break;
   case CONTAINS_AUDIO | CONTAINS_VIDEO:
-    print("[48C               \r");
+    print("[48C                     \r");
   }
 
   ui_volume_src_id = 0;
@@ -403,10 +404,10 @@ static void print_ui_volume()
 {
   switch (stream_types) {
   case CONTAINS_AUDIO:
-    print("[23C Volume: %d%% \r", current_volume);
+    print("[23C Volume: %d%% %s\r", current_volume, mute ? "<mute>":"      ");
     break;
   case CONTAINS_AUDIO | CONTAINS_VIDEO:
-    print("[48C Volume: %d%% \r", current_volume);
+    print("[48C Volume: %d%% %s\r", current_volume, mute ? "<mute>":"      ");
   }
 
   if (ui_volume_src_id != 0)
@@ -441,6 +442,15 @@ static gboolean myp_set_soft_volume(gboolean relative, gint val)
   print_ui_volume();
 
   return ret;
+}
+
+static gboolean myp_toggle_soft_mute()
+{
+  mute = !mute;
+
+  g_object_set(pipeline, "mute", mute, NULL);
+
+  print_ui_volume();
 }
 
 static gint64 get_position(GstElement *element)
@@ -507,6 +517,8 @@ static void prv_init_stream_attributes()
     myp_set_speed(FALSE, current_speed);
 
   current_volume = 100;
+
+  mute = FALSE;
 
   stream_types = 0;
 
@@ -728,6 +740,7 @@ myp_plugin_t prepare_plugin()
   gst_plugin->set_speed = myp_set_speed;
   gst_plugin->step = myp_step;
   gst_plugin->set_soft_volume = myp_set_soft_volume;
+  gst_plugin->toggle_soft_mute = myp_toggle_soft_mute;
 
   gst_plugin->set_prop = myp_set_prop;
 
