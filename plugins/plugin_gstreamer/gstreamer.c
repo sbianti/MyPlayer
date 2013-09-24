@@ -561,6 +561,7 @@ static gboolean prv_refresh_ui(void *null_data)
 static void prv_init_stream_attributes()
 {
   GstQuery *query = gst_query_new_seeking(GST_FORMAT_TIME);
+  gdouble volume;
   gint64 start, end;
 
   if (gst_element_query(pipeline, query)) {
@@ -578,7 +579,8 @@ static void prv_init_stream_attributes()
   if (current_speed != 1.0)
     myp_set_speed(FALSE, current_speed);
 
-  current_volume = 100;
+  g_object_get(pipeline, "volume", &volume, NULL);
+  current_volume = (int)(volume * 100.0);
 
   mute = FALSE;
 
