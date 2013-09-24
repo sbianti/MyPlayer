@@ -352,23 +352,31 @@ static gboolean my_discover()
 static gboolean myp_set_speed(gboolean relative, gdouble val)
 {
   GstEvent *seek_event;
+  gdouble new_speed;
+  gboolean ret;
 
   if (relative)
-    current_speed = current_speed * val;
+    new_speed = current_speed * val;
   else
-    current_speed = val;
+    new_speed = val;
 
   seek_event =
-    gst_event_new_seek(current_speed, GST_FORMAT_TIME,
+    gst_event_new_seek(new_speed, GST_FORMAT_TIME,
 		       GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE,
 		       GST_SEEK_TYPE_NONE, -1, GST_SEEK_TYPE_NONE, -1);
 
-  if (GST_IS_ELEMENT(video_sink))
-    gst_element_send_event(video_sink, seek_event);
-  else
-    gst_element_send_event(audio_sink, seek_event);
+  if (seek_event == NULL)
+    return FALSE;
 
-  return TRUE;
+  if (GST_IS_ELEMENT(video_sink))
+    ret = gst_element_send_event(video_sink, seek_event);
+  else
+    ret = gst_element_send_event(audio_sink, seek_event);
+
+  if (ret)
+    current_speed = new_speed;
+
+  return ret;
 }
 
 static gboolean myp_step(int n_frame)
