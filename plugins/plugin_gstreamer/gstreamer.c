@@ -29,6 +29,8 @@
 #include <gst/video/videooverlay.h>
 
 #include <stdio.h>
+#include <string.h>
+#include <sys/ioctl.h>
 
 #include <myp_plugin.h>
 #include <print.h>
@@ -62,7 +64,7 @@ static gint native_height;
 static gint native_width;
 static myp_ui_t ui_plugin;
 static handle_stop_t handle_stop;
-static guint ui_volume_src_id;
+static guint ui_message_src_id;
 
 struct {
   gboolean timeline_visible;
@@ -90,7 +92,7 @@ static void myp_gst_init(int argc, char *argv[], handle_stop_t func)
   prop.timeline_visible = TRUE;
   ui_plugin = NULL;
   stream_types = 0;
-  ui_volume_src_id = 0;
+  ui_message_src_id = 0;
 
   handle_stop = func;
 }
@@ -349,6 +351,71 @@ static gboolean my_discover()
   return parse_discovery(discoverer, info);
 }
 
+static gboolean clean_ui_message(gpointer null_data)
+{
+  struct winsize w;
+  int size;
+  char *blank;
+
+  ioctl(0, TIOCGWINSZ, &w);
+
+  ui_message_src_id = 0;
+
+  if (w.ws_col == 0)
+    return FALSE;
+
+  if (stream_types == (CONTAINS_AUDIO | CONTAINS_VIDEO))
+    size = w.ws_col - 48;
+  else
+    size = w.ws_col - 23;
+
+  blank = g_try_malloc(size + 1);
+  memset(blank, ' ', size);
+  blank[size] = 0;
+
+  switch (stream_types) {
+  case CONTAINS_VIDEO:
+  case CONTAINS_AUDIO:
+    print("[23C%s\r", blank);
+    break;
+  case CONTAINS_AUDIO | CONTAINS_VIDEO:
+    print("[48C%s\r", blank);
+  }
+
+  g_free(blank);
+
+  return FALSE;
+}
+
+static void print_ui_message(const char *message, ...)
+{
+  va_list args;
+  char *format;
+
+  va_start(args, message);
+
+  switch (stream_types) {
+  case CONTAINS_VIDEO:
+  case CONTAINS_AUDIO:
+    format = g_strdup_printf("[23C %s\r", message);
+    break;
+  case CONTAINS_AUDIO | CONTAINS_VIDEO:
+    format = g_strdup_printf("[48C %s\r", message);
+    break;
+  default:
+    return;
+  }
+
+  vprint(format, args);
+
+  va_end(args);
+
+  if (ui_message_src_id != 0)
+    g_source_remove(ui_message_src_id);
+
+  ui_message_src_id = g_timeout_add(1500, (GSourceFunc)clean_ui_message, NULL);
+}
+
 static gboolean myp_set_speed(gboolean relative, gdouble val)
 {
   GstEvent *seek_event;
@@ -375,6 +442,8 @@ static gboolean myp_set_speed(gboolean relative, gdouble val)
 
   if (ret)
     current_speed = new_speed;
+  else
+    print_ui_message("Error: set speed failed");
 
   return ret;
 }
@@ -393,21 +462,6 @@ static gboolean myp_step(int n_frame)
   return TRUE;
 }
 
-static gboolean clean_ui_volume(gpointer null_data)
-{
-  switch (stream_types) {
-  case CONTAINS_AUDIO:
-    print("[23C                     \r");
-    break;
-  case CONTAINS_AUDIO | CONTAINS_VIDEO:
-    print("[48C                     \r");
-  }
-
-  ui_volume_src_id = 0;
-
-  return FALSE;
-}
-
 static void print_ui_volume()
 {
   switch (stream_types) {
@@ -418,10 +472,10 @@ static void print_ui_volume()
     print("[48C Volume: %d%% %s\r", current_volume, mute ? "<mute>":"      ");
   }
 
-  if (ui_volume_src_id != 0)
-    g_source_remove(ui_volume_src_id);
+  if (ui_message_src_id != 0)
+    g_source_remove(ui_message_src_id);
 
-  ui_volume_src_id = g_timeout_add(2000, (GSourceFunc)clean_ui_volume, NULL);
+  ui_message_src_id = g_timeout_add(2000, (GSourceFunc)clean_ui_message, NULL);
 }
 
 static gboolean myp_set_soft_volume(gboolean relative, gint val)
