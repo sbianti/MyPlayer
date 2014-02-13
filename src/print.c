@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "print.h"
+#include <print.h>
 
 int print(const char *format, ...)
 {

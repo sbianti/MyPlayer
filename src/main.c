@@ -40,7 +40,7 @@
 
 #include <glib.h>
 
-#include "print.h"
+#include <print.h>
 #include "playlist.h"
 #include "context.h"
 

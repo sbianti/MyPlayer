@@ -25,8 +25,8 @@
 #include <glib.h>
 
 #include "playlist.h"
-#include "myp_plugin.h"
-#include "myp_ui.h"
+#include <myp_plugin.h>
+#include <myp_ui.h>
 
 enum __myp_status_t__ { SUCCESS, EXIT, ERROR };
 typedef enum __myp_status_t__ myp_status_t;

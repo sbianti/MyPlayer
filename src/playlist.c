@@ -20,7 +20,7 @@
  */
 
 #include "playlist.h"
-#include "print.h"
+#include <print.h>
 
 #define CURRENT_URI (char *)(playlist->current->data)
 

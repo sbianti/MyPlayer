@@ -21,8 +21,8 @@
 
 #include <glib.h>
 
-#include "myp_plugin.h"
-#include "myp_ui.h"
+#include <myp_plugin.h>
+#include <myp_ui.h>
 
 #ifndef PLAYLIST_H
 #define PLAYLIST_H
