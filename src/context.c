@@ -2,7 +2,7 @@
  *
  *  MyPlayer
  *
- *  Copyright © 2013 Sébastien Bianti
+ *  Copyright © 2013-2014 Sébastien Bianti
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
