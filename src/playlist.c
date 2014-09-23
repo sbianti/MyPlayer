@@ -48,7 +48,6 @@ static gboolean prv_set_uri(myp_plugin_t myp_plugin, char *uri)
   if (myp_plugin->seturi(uri) == TRUE)
     return TRUE;
 
-  printerrl("seturi <%s> failed", uri);
   return FALSE;
 }
 
@@ -60,7 +59,7 @@ static gboolean prv_play(myp_playlist_t playlist,
   myp_plugin->stop();
 
   if (prv_set_uri(myp_plugin, CURRENT_URI) == FALSE) {
-    printerrl("Set URI <%> failed", CURRENT_URI);
+    printerrl("Set URI <%s> failed", CURRENT_URI);
     return FALSE;
   }
 
