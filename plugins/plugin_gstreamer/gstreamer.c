@@ -35,7 +35,7 @@
 #include <myp_plugin.h>
 #include <print.h>
 
-#define TIME_FORMAT "u:%02u:%2.1f"
+#define TIME_FORMAT "u:%02u:%04.1f"
 #define A_TIME_FORMAT "A: %"TIME_FORMAT
 #define V_TIME_FORMAT "V: %"TIME_FORMAT
 #define AV_TIME_FORMAT A_TIME_FORMAT" "V_TIME_FORMAT" A-V: %.3f"
@@ -499,7 +499,7 @@ static gboolean myp_set_soft_volume(gboolean relative, gint val)
   } else
     ret = TRUE;
 
-  g_object_set(pipeline, "volume", current_volume / 100.0, NULL);  
+  g_object_set(pipeline, "volume", current_volume / 100.0, NULL);
 
   print_ui_volume();
 
